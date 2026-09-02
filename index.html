@@ -584,7 +584,11 @@ input[type="time"]::-webkit-calendar-picker-indicator{
 </div>
 
 <main>
-
+<div id="activeMachineTitle" style="display:flex; align-items:center; gap:10px; margin-bottom:18px; padding:10px 16px; background:var(--panel-2); border:1px solid var(--border); border-radius:8px;">
+  <span style="width:10px; height:10px; border-radius:50%; background:var(--accent); flex-shrink:0;"></span>
+  <span style="font-size:13px; color:var(--text-dim); font-weight:600;">Mesin:</span>
+  <span id="activeMachineName" style="font-size:15px; color:var(--text); font-weight:800; font-family:var(--mono); letter-spacing:.3px;"></span>
+</div>
   <!-- ============ INPUT VIEW ============ -->
   <section class="view active" id="view-input">
     <form id="entryForm">
@@ -1304,6 +1308,9 @@ document.getElementById('machineSelect').addEventListener('change', (e) => {
   seedMasterFromEntries(state.machine, getEntries(state.machine));
   refreshMasterSelects('', '');
   syncMasterFromServer();
+  document.getElementById('problemRows').innerHTML = '';
+  addProblemRow();
+  recomputeStrip();
   renderAll();
   if(state.view === 'riwayat' || state.view === 'dashboard' || state.view === 'summary'){
     syncFromServer();
@@ -1313,6 +1320,8 @@ function applyAccent(){
   const m = currentMachine();
   document.documentElement.style.setProperty('--accent', m.color);
   document.getElementById('brandDot').style.background = m.color;
+  const nameEl = document.getElementById('activeMachineName');
+  if(nameEl) nameEl.textContent = m.label;
 }
 
 function updateMachineSelectVisibility(){
@@ -1336,17 +1345,26 @@ document.getElementById('tabs').addEventListener('click', (e) => {
 /* ============================================================
    PROBLEM ROWS (dynamic, in the Input form)
 ============================================================ */
-const PROBLEM_CATEGORIES = ['Machine','Dies','Finger','Misgrip','Material','Others'];
+const PROBLEM_CATEGORIES_BY_MACHINE = {
+  '1600TR': ['Machine','Dies','Finger','Misgrip','Material','Others'],
+  '2500TR': ['Machine','Dies','Finger','Misgrip','Material','Others'],
+  '800BP':  ['Machine','Dies','Misgrip','Material','Others'],
+  '300BP':  ['Machine','Dies','Misgrip','Material','Others'],
+};
+function getProblemCategories(){
+  return PROBLEM_CATEGORIES_BY_MACHINE[state.machine] || PROBLEM_CATEGORIES_BY_MACHINE['1600TR'];
+}
 
 function addProblemRow(data){
-  data = data || { kategori: PROBLEM_CATEGORIES[0], keterangan: '', menit: '' };
+  const cats = getProblemCategories();
+  data = data || { kategori: cats[0], keterangan: '', menit: '' };
   const id = 'p' + (state.problemCount++);
   const row = document.createElement('div');
   row.className = 'problem-row';
   row.dataset.rowId = id;
   row.innerHTML = `
     <select class="p-kategori">
-      ${PROBLEM_CATEGORIES.map(c => `<option value="${c}" ${c===data.kategori?'selected':''}>${c}</option>`).join('')}
+      ${cats.map(c => `<option value="${c}" ${c===data.kategori?'selected':''}>${c}</option>`).join('')}
     </select>
     <input type="text" class="p-keterangan" placeholder="Keterangan problem" value="${escapeHtml(data.keterangan)}">
     <input type="number" class="p-menit" placeholder="Menit" min="0" value="${data.menit}">
@@ -1445,10 +1463,11 @@ function computeDurationMinutesWithBreaks(tanggal, start, end){
 function renderCategoryBreakdown(rows){
   const el = document.getElementById('categoryBreakdown');
   if(!el) return;
+  const cats = getProblemCategories();
   const totals = {};
-  PROBLEM_CATEGORIES.forEach(c => totals[c] = 0);
+  cats.forEach(c => totals[c] = 0);
   rows.forEach(p => { totals[p.kategori] = (totals[p.kategori] || 0) + p.menit; });
-  el.innerHTML = PROBLEM_CATEGORIES.map(c =>
+  el.innerHTML = cats.map(c =>
     `<div class="cat"><div class="v">${totals[c]}m</div><div class="l">${c}</div></div>`
   ).join('');
 }
@@ -1937,7 +1956,7 @@ function renderDashboard(){
 
   /* ---- Pie: breakdown Line Stop per jenis, dijumlah 1 bulan lalu dirata-rata per hari ---- */
   const lineStopCat = { 'Terencana': 0 };
-  PROBLEM_CATEGORIES.forEach(c => lineStopCat[c] = 0);
+  getProblemCategories().forEach(c => lineStopCat[c] = 0);
   monthEntries.forEach(e => {
     lineStopCat['Terencana'] += e.stopTerplanMenit || 0;
     (e.problems||[]).forEach(p => { lineStopCat[p.kategori] = (lineStopCat[p.kategori]||0) + p.menit; });
