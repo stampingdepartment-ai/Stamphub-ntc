@@ -900,9 +900,10 @@ function renderMasterSelect(selectId, machine, type, selectedValue){
   const list = getMasterList(machine, type);
   const current = selectedValue !== undefined ? selectedValue : el.value;
   const placeholder = type === 'pic' ? '— Pilih Nama —' : type === 'scrap' ? '— Pilih Jenis Scrap —' : '— Pilih Part Nomor —';
+  const addNewOption = isAdminUser() ? '<option value="__new__">+ Tambah Baru...</option>' : '';
   el.innerHTML = `<option value="">${placeholder}</option>` +
     list.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('') +
-    '<option value="__new__">+ Tambah Baru...</option>';
+    addNewOption;
   if(current && list.includes(current)) el.value = current;
 }
 function refreshMasterSelects(selectedPic, selectedPart, selectedScrap){
@@ -1014,7 +1015,10 @@ function getLoginSession(){
 }
 function setLoginSession(session){ localStorage.setItem(LOGIN_KEY, JSON.stringify(session)); }
 function clearLoginSession(){ localStorage.removeItem(LOGIN_KEY); }
-
+function isAdminUser(){
+  const session = getLoginSession();
+  return !!(session && session.role === 'admin');
+}
 async function apiLogin(employeeId, password){
   const cfg = getConfig();
   if(!cfg.scriptUrl) throw new Error('Aplikasi belum terhubung ke Google Sheets, hubungi admin');
@@ -1036,6 +1040,7 @@ function showApp(){
   document.getElementById('appShell').style.display = '';
   document.getElementById('loginOverlay').style.display = 'none';
   updateLoginInfo();
+  applyRolePermissions();
 }
 function updateLoginInfo(){
   const session = getLoginSession();
@@ -1059,7 +1064,22 @@ function updateLoginInfo(){
     if(greetBar) greetBar.style.display = 'none';
   }
 }
+function applyRolePermissions(){
+  const isAdmin = isAdminUser();
+  const inputBtn = document.querySelector('#tabs button[data-view="input"]');
+  if(inputBtn) inputBtn.style.display = isAdmin ? '' : 'none';
 
+  if(!isAdmin && state.view === 'input'){
+    state.view = 'riwayat';
+    document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('active', b.dataset.view === 'riwayat'));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    const riwayatSection = document.getElementById('view-riwayat');
+    if(riwayatSection) riwayatSection.classList.add('active');
+    renderAll();
+    syncFromServer();
+  }
+  updateMachineSelectVisibility();
+}
 /** Kalau belum terhubung ke Sheets, tidak bisa validasi login -> langsung tampilkan
  *  aplikasi (mode lokal). Kalau sudah terhubung, wajib login dulu. */
 function checkLoginGate(){
@@ -1088,7 +1108,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   btn.textContent = 'Memproses...';
   try{
     const result = await apiLogin(id, pw);
-    setLoginSession({ employeeId: result.employeeId || id, name: result.name || id });
+    setLoginSession({ employeeId: result.employeeId || id, name: result.name || id, role: result.role || 'user' });
     document.getElementById('loginForm').reset();
     showApp();
   }catch(err){
@@ -1241,7 +1261,7 @@ function applyAccent(){
 
 function updateMachineSelectVisibility(){
   const group = document.querySelector('.tab-group');
-  if(group) group.classList.toggle('expanded', state.view === 'input');
+  if(group) group.classList.toggle('expanded', state.view === 'input' || !isAdminUser());
 }
 document.getElementById('tabs').addEventListener('click', (e) => {
   const btn = e.target.closest('button');
@@ -1573,8 +1593,8 @@ function renderRiwayat(){
       <td style="white-space:normal; min-width:220px;">${escapeHtml(problemDetail)}</td>
       <td>${entry.konfirmasi ? '✅' : '—'}</td>
       <td>
-        <button class="btn btn-ghost btn-sm" data-edit="${entry.id}">Edit</button>
-        <button class="btn btn-danger btn-sm" data-del="${entry.id}">Hapus</button>
+        ${isAdminUser() ? `<button class="btn btn-ghost btn-sm" data-edit="${entry.id}">Edit</button>
+        <button class="btn btn-danger btn-sm" data-del="${entry.id}">Hapus</button>` : '—'}
       </td>
     `;
     body.appendChild(tr);
