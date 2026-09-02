@@ -611,10 +611,11 @@ input[type="time"]::-webkit-calendar-picker-indicator{
         <div class="grid cols-4">
           <div class="field"><label>Tanggal</label><input type="date" id="f_tanggal" required></div>
           <div class="field"><label>Shift</label>
-            <select id="f_shift">
-              <option value="RED">Merah (Red)</option>
-              <option value="BLUE">Biru (Blue)</option>
-            </select>
+            <select id="f_shift" required>
+  <option value="">— Pilih Shift —</option>
+  <option value="RED">Merah (Red)</option>
+  <option value="BLUE">Biru (Blue)</option>
+</select>
           </div>
           <div class="field"><label>Nama / PIC</label><select id="f_pic" required></select></div>
           <div class="field"><label>Part Nomor</label><select id="f_part" required></select></div>
@@ -961,6 +962,18 @@ function initSearchableSelect(selectId){
     shouldSort: false,
     itemSelectText: '',
     searchResultLimit: 20,
+  });
+}
+function initShiftSelect(){
+  const el = document.getElementById('f_shift');
+  if(!el) return;
+  if(choicesInstances['f_shift']){
+    choicesInstances['f_shift'].destroy();
+  }
+  choicesInstances['f_shift'] = new Choices(el, {
+    searchEnabled: false,
+    shouldSort: false,
+    itemSelectText: '',
   });
 }
 function renderMasterSelect(selectId, machine, type, selectedValue){
@@ -1551,6 +1564,7 @@ function resetForm(){
   document.getElementById('f_tanggal').value = new Date().toISOString().slice(0,10);
   document.getElementById('submitBtn').textContent = 'Simpan Laporan';
   refreshMasterSelects('', '');
+  initShiftSelect();
   recomputeStrip();
 }
 document.getElementById('resetFormBtn').addEventListener('click', resetForm);
