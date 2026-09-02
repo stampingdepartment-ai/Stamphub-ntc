@@ -1,9 +1,11 @@
-<!DOCTYPE html>
+<!DOCTYPE html>n
 <html lang="id">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Stamphub-Ntc — Laporan Produksi Stamping</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 <script>
   // Diisi otomatis oleh Apps Script saat halaman ini di-deploy & dibuka.
   // Kalau file ini dibuka langsung sebagai HTML biasa (bukan lewat Apps Script), akan kosong.
@@ -217,7 +219,42 @@
     outline: 2px solid var(--accent); outline-offset: 0; border-color: transparent;
   }
   input[readonly]{ color: var(--text-dim); background: #14171a; }
-
+/* Choices.js dark theme override */
+.choices{ margin-bottom:0; }
+.choices__inner{
+  background: var(--panel-2) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+  min-height: unset !important;
+  padding: 9px 10px !important;
+  font-size: 14px !important;
+  border-radius: 7px !important;
+}
+.choices__list--dropdown, .choices__list[aria-expanded]{
+  background: var(--panel-2) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+}
+.choices__list--dropdown .choices__item--selectable,
+.choices__list[aria-expanded] .choices__item--selectable{
+  color: var(--text) !important;
+}
+.choices__list--dropdown .choices__item--selectable.is-highlighted,
+.choices__list[aria-expanded] .choices__item--selectable.is-highlighted{
+  background: var(--accent) !important;
+  color: var(--accent-ink) !important;
+}
+.choices__input{
+  background: var(--panel-2) !important;
+  color: var(--text) !important;
+}
+.choices__list--single .choices__item{
+  color: var(--text) !important;
+}
+.choices__placeholder{
+  color: var(--text-faint) !important;
+  opacity: 1 !important;
+}
 input[type="date"]::-webkit-calendar-picker-indicator,
 input[type="time"]::-webkit-calendar-picker-indicator{
   filter: invert(1) brightness(1.5);
@@ -895,6 +932,20 @@ function seedDefaultMasterParts(){
   });
   localStorage.setItem(PART_SEED_FLAG_KEY, '1');
 }
+const choicesInstances = {};
+function initSearchableSelect(selectId){
+  const el = document.getElementById(selectId);
+  if(!el) return;
+  if(choicesInstances[selectId]){
+    choicesInstances[selectId].destroy();
+  }
+  choicesInstances[selectId] = new Choices(el, {
+    searchEnabled: true,
+    shouldSort: false,
+    itemSelectText: '',
+    searchResultLimit: 20,
+  });
+}
 function renderMasterSelect(selectId, machine, type, selectedValue){
   const el = document.getElementById(selectId);
   const list = getMasterList(machine, type);
@@ -905,6 +956,7 @@ function renderMasterSelect(selectId, machine, type, selectedValue){
     list.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('') +
     addNewOption;
   if(current && list.includes(current)) el.value = current;
+  initSearchableSelect(selectId);
 }
 function refreshMasterSelects(selectedPic, selectedPart, selectedScrap){
   renderMasterSelect('f_pic', state.machine, 'pic', selectedPic);
@@ -1145,9 +1197,13 @@ async function syncMasterFromServer(){
   try{
     const master = await apiGetMaster();
     if(master){
-      (master.pic||[]).forEach(v => addMasterValue(state.machine, 'pic', v));
-      (master.part||[]).forEach(v => addMasterValue(state.machine, 'part', v));
-      (master.scrap||[]).forEach(v => addMasterValue(state.machine, 'scrap', v));
+      const all = getMasterAll();
+      all[state.machine] = {
+        pic: (master.pic || []).slice(),
+        part: (master.part || []).slice(),
+        scrap: (master.scrap || []).slice(),
+      };
+      setMasterAll(all);
       refreshMasterSelects();
     }
   }catch(err){
