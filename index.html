@@ -1,4 +1,4 @@
-<!DOCTYPE html>n
+<!DOCTYPE html>
 <html lang="id">
 <head>
 <meta charset="UTF-8">
@@ -1071,7 +1071,7 @@ function updatePartMaxAndValidate(){
   const list = getMasterList(state.machine, 'part');
   const found = list.find(p => p && p.nama === partName);
   currentPartMax = (found && found.max) ? Number(found.max) : null;
-  ['f_planning','f_material','f_stroke','f_pcsok'].forEach(id => validateAgainstMax(id));
+  ['f_planning','f_material','f_stroke'].forEach(id => validateAgainstMax(id));
 }
 function validateAgainstMax(fieldId){
   if(!currentPartMax) return;
@@ -1082,7 +1082,7 @@ function validateAgainstMax(fieldId){
   }
 }
 document.getElementById('f_part').addEventListener('change', updatePartMaxAndValidate);
-['f_planning','f_material','f_stroke','f_pcsok'].forEach(id => {
+['f_planning','f_material','f_stroke'].forEach(id => {
   document.getElementById(id).addEventListener('input', () => validateAgainstMax(id));
 });
 document.getElementById('maxWarnOkBtn').addEventListener('click', () => {
