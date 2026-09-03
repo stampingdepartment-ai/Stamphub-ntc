@@ -470,6 +470,21 @@ input[type="time"]::-webkit-calendar-picker-indicator{
   .modal-desc{ color: var(--text-dim); font-size:13px; margin:0 0 14px; line-height:1.55; }
   .modal-status{ margin-top:10px; font-size:13px; min-height: 18px; }
   .modal-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
+  #maxWarnModal .modal{
+  background: #ffffff;
+  border-color: #ef4444;
+}
+#maxWarnModal .modal h3{
+  color: #ef4444;
+}
+#maxWarnModal .modal .modal-desc{
+  color: #ef4444;
+  font-weight: bold;
+}
+#maxWarnModal .modal .btn-primary{
+  background: #ef4444;
+  color: #ffffff;
+}
 </style>
 </head>
 <body>
@@ -635,16 +650,17 @@ input[type="time"]::-webkit-calendar-picker-indicator{
       <div class="card">
         <div class="grid cols-4">
           <div class="field"><label>Planning Produksi (pcs)</label><input type="number" id="f_planning" min="0" required></div>
-          <div class="field"><label>Material Digunakan (pcs)</label><input type="number" id="f_material" min="0"></div>
+          <div class="field"><label>Material Digunakan (pcs)</label><input type="number" id="f_material" min="0"required></div>
           <div class="field"><label>Actual Produksi (Stroke)</label><input type="number" id="f_stroke" min="0" required></div>
           <div class="field"><label>Actual Produksi (Pcs OK)</label><input type="number" id="f_pcsok" min="0" required></div>
           <div class="field"><label>Jenis Scrap</label><select id="f_jenisscrap"></select></div>
           <div class="field"><label>Qty Scrap (Pcs NG)</label><input type="number" id="f_qtyng" min="0" value="0"></div>
-          <div class="field"><label>Actual SPM</label><input type="number" id="f_spm" min="0"></div>
+          <div class="field"><label>Actual SPM</label><input type="number" id="f_spm" min="0"required></div>
           <div class="field"><label>SPM Kajuhekin</label><input type="number" id="f_spmkajuhekin" readonly tabindex="-1"></div>
           <div class="field"><label>GSPH / Item</label><input type="number" id="f_gsph" readonly tabindex="-1"></div>
           <div class="field"><label>Waktu Efektif (Menit)</label><input type="number" id="f_waktuefektif" readonly tabindex="-1"></div>
           <div class="field"><label>% Efisiensi</label><input type="text" id="f_pctefisiensi" readonly tabindex="-1"></div>
+          <div class="field"><label>Frekuensi Spray Coolant (Dromus)</label><input type="number" id="f_frekcoolant" min="0" value="0"required></div>
         </div>
         <div class="grid cols-4" style="margin-top:14px;">
           <div class="field" style="grid-column: span 2;">
@@ -872,7 +888,8 @@ function normalizeEntry(e){
     material: Number(e.material) || 0,
     stroke: Number(e.stroke) || 0,
     pcsok: Number(e.pcsok) || 0,
-    jenisScrap: e.jenisScrap || '',
+frekCoolant: Number(e.frekCoolant) || 0,   // ← tambah baris ini
+jenisScrap: e.jenisScrap || '',
     qtyNg: Number(e.qtyNg) || 0,
     spm: Number(e.spm) || 0,
     spmKajuhekin: Number(e.spmKajuhekin) || 0,
@@ -884,15 +901,6 @@ function normalizeEntry(e){
     dandori: Number(e.dandori) || 0,
     stopTerplanJenis: e.stopTerplanJenis || '',
     stopTerplanMenit: Number(e.stopTerplanMenit) || 0,
-    computed: {
-      totalMenit: Number(c.totalMenit) || 0,
-      totalJam: Number(c.totalJam) || 0,
-      lineStop: Number(c.lineStop) || 0,
-      efektif: Number(c.efektif) || 0,
-      pctLineStop: Number(c.pctLineStop) || 0,
-      pctDandori: Number(c.pctDandori) || 0,
-      pctEfisiensi: Number(c.pctEfisiensi) || 0,
-    },
     computed: {
   totalMenit: Number(c.totalMenit) || 0,
   totalJam: Number(c.totalJam) || 0,
@@ -1691,7 +1699,8 @@ document.getElementById('confirmSaveBtn').addEventListener('click', async () => 
     material: Number(document.getElementById('f_material').value) || 0,
     stroke: Number(document.getElementById('f_stroke').value) || 0,
     pcsok: Number(document.getElementById('f_pcsok').value) || 0,
-    jenisScrap: document.getElementById('f_jenisscrap').value.trim(),
+frekCoolant: Number(document.getElementById('f_frekcoolant').value) || 0,   // ← tambah baris ini
+jenisScrap: document.getElementById('f_jenisscrap').value.trim(),
     qtyNg: Number(document.getElementById('f_qtyng').value) || 0,
     spm: Number(document.getElementById('f_spm').value) || 0,
     spmKajuhekin: Number(document.getElementById('f_spmkajuhekin').value) || 0,
@@ -1761,8 +1770,8 @@ function renderRiwayatHeader(){
     <th>Total (Jam)</th><th>Total (Menit)</th><th>Dandori</th><th>%Dandori</th>
     <th>Stop Terplan</th><th>Menit Terplan</th><th>%Stop Terplan</th><th>Total Line Stop</th><th>%Line Stop</th>
     <th>Waktu Efektif</th><th>%Efisiensi</th>
-    ${catTh}
-    <th>Konfirmasi</th><th>Aksi</th>
+${catTh}
+<th>Konfirmasi</th><th>Frek. Coolant</th><th>Aksi</th>
   `;
 }
 
@@ -1820,14 +1829,13 @@ function renderRiwayat(){
       <td>${escapeHtml(entry.stopTerplanJenis || '-')}</td>
 <td>${entry.stopTerplanMenit}</td>
 <td>${entry.computed.pctStopTerplan}%</td>
-<td>${entry.computed.lineStop}</td>
-<td>${entry.computed.pctLineStop}%</td>
       <td>${entry.computed.lineStop}</td>
       <td>${entry.computed.pctLineStop}%</td>
       <td>${entry.computed.efektif}</td>
       <td>${entry.computed.pctEfisiensi}%</td>
       ${catTds}
       <td>${entry.konfirmasi ? '✅' : '—'}</td>
+      <td>${entry.frekCoolant}</td>
       <td>
         ${isAdminUser() ? `<button class="btn btn-ghost btn-sm" data-edit="${entry.id}">Edit</button>
         <button class="btn btn-danger btn-sm" data-del="${entry.id}">Hapus</button>` : '—'}
@@ -1856,6 +1864,7 @@ function editEntry(id){
   document.getElementById('f_material').value = entry.material;
   document.getElementById('f_stroke').value = entry.stroke;
   document.getElementById('f_pcsok').value = entry.pcsok;
+  document.getElementById('f_frekcoolant').value = entry.frekCoolant;   // ← tambah baris ini
   document.getElementById('f_jenisscrap').value = entry.jenisScrap;
 updatePartMaxAndValidate();   // ← tambah baris ini
   document.getElementById('f_qtyng').value = entry.qtyNg;
@@ -1904,18 +1913,20 @@ document.getElementById('exportCsvBtn').addEventListener('click', () => {
     'Actual Stroke','Actual Pcs OK','Jenis Scrap','Qty Scrap NG','Actual SPM','SPM Kajuhekin','GSPH/Item','Status',
     'Jam Mulai','Jam Selesai','Waktu Dandori (menit)','Total Produksi (menit)','Total Produksi (Jam)',
     'Jenis Line Stop Terplanning','Waktu Line Stop Terplanning (menit)','Total Line Stop (menit)',
-    'Waktu Efektif (menit)','% Line Stop','% Dandori','% Efisiensi','Waktu Input','Detail Problem','Konfirmasi'];
+    'Waktu Efektif (menit)','% Line Stop','% Dandori','% Efisiensi','Waktu Input','Detail Problem','Konfirmasi',
+'Frekuensi Spray Coolant (Dromus)'];
 
   const rows = entries.map(e => [
-    e.tanggal, e.shift, e.pic, e.part, e.planning, e.material, e.stroke, e.pcsok,
-    e.jenisScrap, e.qtyNg, e.spm, e.spmKajuhekin ?? '', e.gsph ?? '', e.statusLabel, e.jamMulai, e.jamSelesai,
-    e.dandori, e.computed.totalMenit, e.computed.totalJam ?? '',
-    e.stopTerplanJenis || '', e.stopTerplanMenit || 0, e.computed.lineStop, e.computed.efektif,
-    e.computed.pctLineStop+'%', e.computed.pctDandori+'%', e.computed.pctEfisiensi+'%',
-    e.waktuInput || '',
-    (e.problems||[]).map(p => `${p.kategori}: ${p.keterangan} (${p.menit}m)`).join(' | '),
-    e.konfirmasi ? 'TRUE' : 'FALSE'
-  ]);
+  e.tanggal, e.shift, e.pic, e.part, e.planning, e.material, e.stroke, e.pcsok,
+  e.jenisScrap, e.qtyNg, e.spm, e.spmKajuhekin ?? '', e.gsph ?? '', e.statusLabel, e.jamMulai, e.jamSelesai,
+  e.dandori, e.computed.totalMenit, e.computed.totalJam ?? '',
+  e.stopTerplanJenis || '', e.stopTerplanMenit || 0, e.computed.lineStop, e.computed.efektif,
+  e.computed.pctLineStop+'%', e.computed.pctDandori+'%', e.computed.pctEfisiensi+'%',
+  e.waktuInput || '',
+  (e.problems||[]).map(p => `${p.kategori}: ${p.keterangan} (${p.menit}m)`).join(' | '),
+  e.konfirmasi ? 'TRUE' : 'FALSE',
+  e.frekCoolant
+]);
 
   const csv = [headers, ...rows].map(r =>
     r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')
