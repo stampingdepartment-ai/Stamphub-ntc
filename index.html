@@ -595,6 +595,15 @@ input[type="time"]::-webkit-calendar-picker-indicator{
   </div>
 </div>
 
+<div class="modal-overlay" id="maxWarnModal">
+  <div class="modal">
+    <h3>Warning!!!...</h3>
+    <p class="modal-desc" id="maxWarnMessage"></p>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="maxWarnOkBtn" type="button">OK</button>
+    </div>
+  </div>
+</div>
 <main>
 <div id="activeMachineTitle" style="display:flex; align-items:center; gap:10px; margin-bottom:18px; padding:10px 16px; background:var(--panel-2); border:1px solid var(--border); border-radius:8px;">
   <span style="width:10px; height:10px; border-radius:50%; background:var(--accent); flex-shrink:0;"></span>
@@ -667,12 +676,13 @@ input[type="time"]::-webkit-calendar-picker-indicator{
       </div>
 
       <h2 class="section-title">Line Stop Terencana</h2>
-      <div class="card">
-        <div class="grid cols-2">
-          <div class="field"><label>Jenis Line Stop Terplanning</label><input type="text" id="f_stopterplan_jenis" placeholder="Contoh: Briefing, Change Over Terjadwal"></div>
-          <div class="field"><label>Waktu Line Stop Terplanning (menit)</label><input type="number" id="f_stopterplan_menit" min="0" value="0"></div>
-        </div>
-      </div>
+<div class="card">
+  <div class="grid cols-3">
+    <div class="field"><label>Jenis Line Stop Terplanning</label><input type="text" id="f_stopterplan_jenis" placeholder="Contoh: Briefing, Change Over Terjadwal"></div>
+    <div class="field"><label>Waktu Line Stop Terplanning (menit)</label><input type="number" id="f_stopterplan_menit" min="0" value="0"></div>
+    <div class="field"><label>% Line Stop Terplanning</label><input type="text" id="f_pctstopterplan" readonly tabindex="-1"></div>
+  </div>
+</div>
 
       <h2 class="section-title">Problem / Line Stop Tidak Terencana</h2>
       <div class="card">
@@ -719,7 +729,7 @@ input[type="time"]::-webkit-calendar-picker-indicator{
             <th>GSPH</th><th>Status</th><th>Jam Mulai</th><th>Jam Selesai</th>
             <th>Total (Jam)</th><th>Total (Menit)</th><th>Dandori</th><th>%Dandori</th>
             <th>Stop Terplan</th><th>Menit Terplan</th><th>Total Line Stop</th><th>%Line Stop</th>
-            <th>Waktu Efektif</th><th>%Efisiensi</th><th>DetailProblem</th></th><th>Konfirmasi</th><th>Aksi</th>
+            <th>Waktu Efektif</th><th>%Efisiensi</th><th>Konfirmasi</th><th>Aksi</th>
           </tr>
         </thead>
         <tbody id="riwayatBody"></tbody>
@@ -883,6 +893,16 @@ function normalizeEntry(e){
       pctDandori: Number(c.pctDandori) || 0,
       pctEfisiensi: Number(c.pctEfisiensi) || 0,
     },
+    computed: {
+  totalMenit: Number(c.totalMenit) || 0,
+  totalJam: Number(c.totalJam) || 0,
+  lineStop: Number(c.lineStop) || 0,
+  efektif: Number(c.efektif) || 0,
+  pctLineStop: Number(c.pctLineStop) || 0,
+  pctDandori: Number(c.pctDandori) || 0,
+  pctEfisiensi: Number(c.pctEfisiensi) || 0,
+  pctStopTerplan: Number(c.pctStopTerplan) || 0,   // ← baris baru, tambahkan di sini
+},
     problems: Array.isArray(e.problems) ? e.problems.map(p => ({
       kategori: (p && p.kategori) || 'Others',
       keterangan: (p && p.keterangan) || '',
@@ -914,17 +934,27 @@ function getMasterList(machine, type){
   const all = getMasterAll();
   return (all[machine] && all[machine][type]) || [];
 }
-function addMasterValue(machine, type, value){
+function addMasterValue(machine, type, value, max){
   value = (value || '').trim();
   if(!value) return;
   const all = getMasterAll();
-  if(!all[machine]) all[machine] = { pic: [], part: [] };
+  if(!all[machine]) all[machine] = { pic: [], part: [], scrap: [] };
   if(!all[machine][type]) all[machine][type] = [];
-  if(!all[machine][type].includes(value)){
-    all[machine][type].push(value);
-    all[machine][type].sort((a,b)=> a.localeCompare(b));
-    setMasterAll(all);
+  if(type === 'part'){
+    const existing = all[machine].part.find(p => p.nama === value);
+    if(existing){
+      if(max !== undefined && max !== null && max !== '') existing.max = Number(max);
+    } else {
+      all[machine].part.push({ nama: value, max: (max===undefined||max===null||max==='') ? null : Number(max) });
+    }
+    all[machine].part.sort((a,b)=> a.nama.localeCompare(b.nama));
+  } else {
+    if(!all[machine][type].includes(value)){
+      all[machine][type].push(value);
+      all[machine][type].sort((a,b)=> a.localeCompare(b));
+    }
   }
+  setMasterAll(all);
 }
 function seedMasterFromEntries(machine, entries){
   entries.forEach(e => {
@@ -982,10 +1012,12 @@ function renderMasterSelect(selectId, machine, type, selectedValue){
   const current = selectedValue !== undefined ? selectedValue : el.value;
   const placeholder = type === 'pic' ? '— Pilih Nama —' : type === 'scrap' ? '— Pilih Jenis Scrap —' : '— Pilih Part Nomor —';
   const addNewOption = isAdminUser() ? '<option value="__new__">+ Tambah Baru...</option>' : '';
-  el.innerHTML = `<option value="">${placeholder}</option>` +
-    list.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('') +
-    addNewOption;
-  if(current && list.includes(current)) el.value = current;
+  const optionsHtml = type === 'part'
+    ? list.map(p => `<option value="${escapeHtml(p.nama)}">${escapeHtml(p.nama)}</option>`).join('')
+    : list.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+  el.innerHTML = `<option value="">${placeholder}</option>` + optionsHtml + addNewOption;
+  const currentExists = type === 'part' ? list.some(p => p.nama === current) : list.includes(current);
+  if(current && currentExists) el.value = current;
   initSearchableSelect(selectId);
 }
 function refreshMasterSelects(selectedPic, selectedPart, selectedScrap){
@@ -996,7 +1028,22 @@ function refreshMasterSelects(selectedPic, selectedPart, selectedScrap){
 function handleMasterSelectChange(selectId, type){
   const el = document.getElementById(selectId);
   if(el.value !== '__new__') return;
-  const label = type === 'pic' ? 'Masukkan nama baru:' : type === 'scrap' ? 'Masukkan jenis scrap baru:' : 'Masukkan part nomor baru:';
+  if(type === 'part'){
+    const nama = window.prompt('Masukkan Part Nomor baru:');
+    if(nama && nama.trim()){
+      const trimmed = nama.trim();
+      const maxStr = window.prompt('Batas maksimal produksi untuk part ini (kosongkan jika tidak ada batas):');
+      const max = (maxStr && maxStr.trim()) ? Number(maxStr.trim()) : null;
+      addMasterValue(state.machine, 'part', trimmed, max);
+      renderMasterSelect(selectId, state.machine, 'part', trimmed);
+      updatePartMaxAndValidate();
+      if(getConfig().scriptUrl){
+        apiAddMaster('part', trimmed, max).catch(err => toast('Gagal simpan ke Sheets: ' + err.message));
+      }
+    } else { el.value = ''; }
+    return;
+  }
+  const label = type === 'pic' ? 'Masukkan nama baru:' : 'Masukkan jenis scrap baru:';
   const val = window.prompt(label);
   if(val && val.trim()){
     const trimmed = val.trim();
@@ -1005,14 +1052,38 @@ function handleMasterSelectChange(selectId, type){
     if(getConfig().scriptUrl){
       apiAddMaster(type, trimmed).catch(err => toast('Gagal simpan ke Sheets: ' + err.message));
     }
-  } else {
-    el.value = '';
-  }
+  } else { el.value = ''; }
 }
 document.getElementById('f_pic').addEventListener('change', () => handleMasterSelectChange('f_pic', 'pic'));
 document.getElementById('f_part').addEventListener('change', () => handleMasterSelectChange('f_part', 'part'));
 document.getElementById('f_jenisscrap').addEventListener('change', () => handleMasterSelectChange('f_jenisscrap', 'scrap'));
-
+let currentPartMax = null;
+function updatePartMaxAndValidate(){
+  const partName = document.getElementById('f_part').value;
+  const list = getMasterList(state.machine, 'part');
+  const found = list.find(p => p && p.nama === partName);
+  currentPartMax = (found && found.max) ? Number(found.max) : null;
+  ['f_planning','f_material','f_stroke','f_pcsok'].forEach(id => validateAgainstMax(id));
+}
+function validateAgainstMax(fieldId){
+  if(!currentPartMax) return;
+  const el = document.getElementById(fieldId);
+  const val = Number(el.value) || 0;
+  if(val > currentPartMax){
+    showMaxWarning(`Hai Guyss...Anda Melebihi batas maksimal untuk part ini, Check lagi inputan anda yang benar, item ini tidak lebih dari (maks: ${currentPartMax.toLocaleString('id-ID')}).`);
+  }
+}
+document.getElementById('f_part').addEventListener('change', updatePartMaxAndValidate);
+['f_planning','f_material','f_stroke','f_pcsok'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => validateAgainstMax(id));
+});
+document.getElementById('maxWarnOkBtn').addEventListener('click', () => {
+  document.getElementById('maxWarnModal').classList.remove('show');
+});
+function showMaxWarning(msg){
+  document.getElementById('maxWarnMessage').textContent = msg;
+  document.getElementById('maxWarnModal').classList.add('show');
+}
 /* ============================================================
    GOOGLE SHEETS SYNC (via Google Apps Script Web App)
 ============================================================ */
@@ -1076,13 +1147,13 @@ async function apiGetMaster(){
   if(!data.ok) throw new Error(data.error || 'Gagal memuat daftar dari Sheets');
   return data; // { pic:[...], part:[...] }
 }
-async function apiAddMaster(type, value){
+async function apiAddMaster(type, value, max){
   const cfg = getConfig();
   if(!cfg.scriptUrl) return;
   const res = await fetch(cfg.scriptUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action: 'addMaster', machine: state.machine, type, value })
+    body: JSON.stringify({ action: 'addMaster', machine: state.machine, type, value, max })
   });
   const data = await res.json();
   if(!data.ok) throw new Error(data.error || 'Gagal menyimpan ke daftar master di Sheets');
@@ -1521,9 +1592,11 @@ function recomputeStrip(){
   const pctLineStop = totalMenit ? Math.round((lineStop/totalMenit)*100) : 0;
   // (4) % Dandori = Waktu Dandori (menit) / Total Produksi (menit)
   const pctDandori = totalMenit ? Math.round((dandori/totalMenit)*100) : 0;
+  const pctStopTerplan = totalMenit ? Math.round((stopTerencana/totalMenit)*100) : 0;
+document.getElementById('f_pctstopterplan').value = pctStopTerplan + '%';
   // (7) % Efisiensi = Waktu Efektif / (Total Produksi (menit) - Waktu Line Stop Terplanning (menit))
-  const pctEfisiensiDenom = totalMenit - stopTerencana;
-  const pctEfisiensi = pctEfisiensiDenom > 0 ? Math.round((efektif/pctEfisiensiDenom)*100) : 0;
+  const pctEfisiensiDenom = totalMenit;
+const pctEfisiensi = pctEfisiensiDenom > 0 ? Math.round((efektif/pctEfisiensiDenom)*100) : 0;
   // (1) SPM Kajuhekin = Actual Produksi (Stroke) / Waktu Efektif (menit)
   const spmKajuhekin = efektif > 0 ? Math.round(stroke/efektif) : 0;
   // (2) GSPH/Item = Actual Produksi (Stroke) / (Total Produksi (menit) - Line Stop Terplanning (menit)) x 60
@@ -1547,7 +1620,7 @@ function recomputeStrip(){
   document.getElementById('f_status_live').value = statusLive;
 
   return { totalMenit, totalJam: Number(totalJam), stopTerencana, stopTakTerencana: lineStop,
-    lineStop, efektif, pctLineStop, pctDandori, pctEfisiensi };
+  lineStop, efektif, pctLineStop, pctDandori, pctEfisiensi, pctStopTerplan };
 }
 ['f_jammulai','f_jamselesai','f_dandori','f_stopterplan_menit','f_stroke','f_planning','f_tanggal'].forEach(id => {
   document.getElementById(id).addEventListener('input', recomputeStrip);
@@ -1563,6 +1636,7 @@ function resetForm(){
   document.getElementById('problemRows').innerHTML = '';
   document.getElementById('f_tanggal').value = new Date().toISOString().slice(0,10);
   document.getElementById('submitBtn').textContent = 'Simpan Laporan';
+  currentPartMax = null;              // ← tambah baris ini
   refreshMasterSelects('', '');
   initShiftSelect();
   recomputeStrip();
@@ -1674,6 +1748,35 @@ function badgeForStatus(s){
   return '<span class="badge badge-good">Sesuai</span>';
 }
 
+function renderRiwayatHeader(){
+  const theadRow = document.querySelector('#view-riwayat table thead tr');
+  if(!theadRow) return;
+  const cats = getProblemCategories();
+  const catTh = cats.map(c => `<th>${c} Ket</th><th>${c} Menit</th>`).join('');
+  theadRow.innerHTML = `
+    <th>Tanggal</th><th>Waktu Input</th><th>Shift</th><th>PIC</th><th>Part Nomor</th>
+    <th>Planning</th><th>Material</th><th>Stroke</th><th>Pcs OK</th>
+    <th>Jenis Scrap</th><th>Qty NG</th><th>SPM</th><th>SPM Kajuhekin</th>
+    <th>GSPH</th><th>Status</th><th>Jam Mulai</th><th>Jam Selesai</th>
+    <th>Total (Jam)</th><th>Total (Menit)</th><th>Dandori</th><th>%Dandori</th>
+    <th>Stop Terplan</th><th>Menit Terplan</th><th>%Stop Terplan</th><th>Total Line Stop</th><th>%Line Stop</th>
+    <th>Waktu Efektif</th><th>%Efisiensi</th>
+    ${catTh}
+    <th>Konfirmasi</th><th>Aksi</th>
+  `;
+}
+
+function aggregateProblemsForDisplay(problems, categories){
+  const acc = {};
+  categories.forEach(c => acc[c] = { ket: [], menit: 0 });
+  (problems || []).forEach(p => {
+    const cat = categories.includes(p.kategori) ? p.kategori : categories[categories.length - 1];
+    if(p.keterangan) acc[cat].ket.push(p.keterangan);
+    acc[cat].menit += Number(p.menit) || 0;
+  });
+  return categories.map(c => ({ ket: acc[c].ket.join(' | ') || '-', menit: acc[c].menit }));
+}
+
 function renderRiwayat(){
   let entries = getEntries(state.machine).slice().sort((a,b)=> b.tanggal.localeCompare(a.tanggal));
   if(filterDate) entries = entries.filter(e => e.tanggal === filterDate);
@@ -1685,9 +1788,11 @@ function renderRiwayat(){
   if(entries.length === 0){ empty.style.display = 'block'; return; }
   empty.style.display = 'none';
 
+  const cats = getProblemCategories();
   entries.forEach(entry => {
     const tr = document.createElement('tr');
-    const problemDetail = (entry.problems||[]).map(p => `${p.kategori}: ${p.keterangan||'-'} (${p.menit}m)`).join(' | ') || '-';
+    const catData = aggregateProblemsForDisplay(entry.problems, cats);
+    const catTds = catData.map(d => `<td>${escapeHtml(d.ket)}</td><td>${d.menit}</td>`).join('');
     tr.innerHTML = `
       <td>${entry.tanggal}</td>
       <td>${entry.waktuInput || '-'}</td>
@@ -1712,11 +1817,16 @@ function renderRiwayat(){
       <td>${entry.computed.pctDandori}%</td>
       <td>${escapeHtml(entry.stopTerplanJenis || '-')}</td>
       <td>${entry.stopTerplanMenit}</td>
+      <td>${escapeHtml(entry.stopTerplanJenis || '-')}</td>
+<td>${entry.stopTerplanMenit}</td>
+<td>${entry.computed.pctStopTerplan}%</td>
+<td>${entry.computed.lineStop}</td>
+<td>${entry.computed.pctLineStop}%</td>
       <td>${entry.computed.lineStop}</td>
       <td>${entry.computed.pctLineStop}%</td>
       <td>${entry.computed.efektif}</td>
       <td>${entry.computed.pctEfisiensi}%</td>
-      <td style="white-space:normal; min-width:220px;">${escapeHtml(problemDetail)}</td>
+      ${catTds}
       <td>${entry.konfirmasi ? '✅' : '—'}</td>
       <td>
         ${isAdminUser() ? `<button class="btn btn-ghost btn-sm" data-edit="${entry.id}">Edit</button>
@@ -1747,6 +1857,7 @@ function editEntry(id){
   document.getElementById('f_stroke').value = entry.stroke;
   document.getElementById('f_pcsok').value = entry.pcsok;
   document.getElementById('f_jenisscrap').value = entry.jenisScrap;
+updatePartMaxAndValidate();   // ← tambah baris ini
   document.getElementById('f_qtyng').value = entry.qtyNg;
   document.getElementById('f_spm').value = entry.spm;
   document.getElementById('f_spmkajuhekin').value = entry.spmKajuhekin ?? '';
@@ -2130,7 +2241,7 @@ function renderSummaryTables(daysThisMonth, byDay, scrapSorted){
    MASTER RENDER
 ============================================================ */
 function renderAll(){
-  if(state.view === 'riwayat') renderRiwayat();
+  if(state.view === 'riwayat'){ renderRiwayatHeader(); renderRiwayat(); }
   if(state.view === 'dashboard') renderDashboard();
   if(state.view === 'summary') renderSummary();
 }
