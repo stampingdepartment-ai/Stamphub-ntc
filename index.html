@@ -1790,6 +1790,14 @@ document.getElementById('clearFilterBtn').addEventListener('click', () => {
   document.getElementById('filterDate').value = '';
   renderRiwayat();
 });
+// TARUH FUNGSI BARU ANDA DI SINI
+function formatDateTimeValue(v){ 
+  if(!v) return '-'; 
+  const s = String(v); 
+  const match = s.match(/(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/); 
+  if(match) return `${match[1]} ${match[2]}:${match[3]}`; 
+  return s; 
+}
 
 function badgeForStatus(s){
   if(s === 'Over Produksi') return '<span class="badge badge-warn">Over</span>';
@@ -1847,7 +1855,7 @@ function renderRiwayat(){
     // PERBAIKAN: Menghapus duplikasi kolom terencana agar urutannya pas dengan Header & Google Sheets
     tr.innerHTML = `
       <td>${entry.tanggal}</td>
-      <td>${entry.waktuInput || '-'}</td>
+      <td>${formatDateTimeValue(entry.waktuInput)}</td>
       <td>${entry.shift === 'RED' ? 'Merah' : 'Biru'}</td>
       <td>${escapeHtml(entry.pic)}</td>
       <td>${escapeHtml(entry.part)}</td>
