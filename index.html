@@ -659,9 +659,24 @@ input[type="time"]::-webkit-calendar-picker-indicator{
           <div class="field"><label>SPM Kajuhekin</label><input type="number" id="f_spmkajuhekin" readonly tabindex="-1"></div>
           <div class="field"><label>GSPH / Item</label><input type="number" id="f_gsph" readonly tabindex="-1"></div>
           <div class="field"><label>Waktu Efektif (Menit)</label><input type="number" id="f_waktuefektif" readonly tabindex="-1"></div>
-          <div class="field"><label>% Efisiensi</label><input type="text" id="f_pctefisiensi" readonly tabindex="-1"></div>
-          <div class="field"><label>Frekuensi Spray Coolant (Dromus)</label><input type="number" id="f_frekcoolant" min="0" value="0"required></div>
-        </div>
+          <div class="field"><label>% Efisiensi</label><input type="text" id="f_pctefisiensi" readonly tabindex="-1"></div>  
+        <div class="field">
+  <label>Frekuensi Spray Coolant (Dromus)</label>
+  <select id="f_frekcoolant" required>
+    <option value="">— Pilih —</option>
+    <option value="1">1</option>
+    <option value="2">2</option>
+    <option value="3">3</option>
+    <option value="4">4</option>
+    <option value="5">5</option>
+    <option value="6">6</option>
+    <option value="7">7</option>
+    <option value="8">8</option>
+    <option value="9">9</option>
+    <option value="Continue">Continue (100%)</option>
+  </select>
+</div>
+</div>
         <div class="grid cols-4" style="margin-top:14px;">
           <div class="field" style="grid-column: span 2;">
             <label>Status Produksi</label>
@@ -760,15 +775,19 @@ input[type="time"]::-webkit-calendar-picker-indicator{
   <!-- ============ DASHBOARD VIEW ============ -->
   <section class="view" id="view-dashboard">
     <div class="hmi-grid">
-      <div class="hmi-card hmi-blue"><div class="hmi-value" id="d_totalstroke">0</div><div class="hmi-label">Total Stroke</div><div class="hmi-icon">&#9881;</div></div>
-      <div class="hmi-card hmi-red"><div class="hmi-value" id="d_totalng">0</div><div class="hmi-label">Total NG (Reject)</div><div class="hmi-icon">&#9888;</div></div>
-      <div class="hmi-card hmi-orange"><div class="hmi-value" id="d_totallinestop">0</div><div class="hmi-label">Total Line Stop (Jam)</div><div class="hmi-icon">&#9203;</div></div>
-      <div class="hmi-card hmi-teal"><div class="hmi-value" id="d_gsphavg">0</div><div class="hmi-label">GSPH Rata-rata / Shift</div><div class="hmi-icon">&#128202;</div></div>
-      <div class="hmi-card hmi-purple"><div class="hmi-value" id="d_strokeavg">0</div><div class="hmi-label">Stroke Rata-rata / Shift</div><div class="hmi-icon">&#128257;</div></div>
-      <div class="hmi-card hmi-green"><div class="hmi-value" id="d_effavg">0%</div><div class="hmi-label">Efisiensi Rata-rata</div><div class="hmi-icon">&#9989;</div></div>
-      <div class="hmi-card hmi-orange"><div class="hmi-value" id="d_dandoriavg">0%</div><div class="hmi-label">Dandori Rata-rata</div><div class="hmi-icon">&#128736;</div></div>
-      <div class="hmi-card hmi-red"><div class="hmi-value" id="d_linestoppctavg">0%</div><div class="hmi-label">Line Stop Rata-rata</div><div class="hmi-icon">&#9940;</div></div>
-    </div>
+  <div class="hmi-card hmi-teal"><div class="hmi-value" id="d_gsphavg_gab">0</div><div class="hmi-label">GSPH Gabungan (Hari Ini)</div><div class="hmi-icon">&#128202;</div></div>    
+  <div class="hmi-card hmi-blue"><div class="hmi-value" id="d_totalstroke">0</div><div class="hmi-label">Total Stroke (Hari Ini)</div><div class="hmi-icon">&#9881;</div></div>
+  <div class="hmi-card hmi-red"><div class="hmi-value" id="d_totalng">0</div><div class="hmi-label">Total NG (Hari Ini)</div><div class="hmi-icon">&#9888;</div></div>
+  <div class="hmi-card hmi-orange"><div class="hmi-value" id="d_totallinestop">0</div><div class="hmi-label">Total Line Stop (Jam, Hari Ini)</div><div class="hmi-icon">&#9203;</div></div>
+  <div class="hmi-card hmi-teal"><div class="hmi-value" id="d_gsphavg_red">0</div><div class="hmi-label">GSPH Shift Merah (Hari Ini)</div><div class="hmi-icon">&#128202;</div></div>
+  <div class="hmi-card hmi-teal"><div class="hmi-value" id="d_gsphavg_blue">0</div><div class="hmi-label">GSPH Shift Biru (Hari Ini)</div><div class="hmi-icon">&#128202;</div></div>
+  <div class="hmi-card hmi-purple"><div class="hmi-value" id="d_strokeavg_red">0</div><div class="hmi-label">Stroke Shift Merah (Hari Ini)</div><div class="hmi-icon">&#128257;</div></div>
+  <div class="hmi-card hmi-purple"><div class="hmi-value" id="d_strokeavg_blue">0</div><div class="hmi-label">Stroke Shift Biru (Hari Ini)</div><div class="hmi-icon">&#128257;</div></div>
+  <div class="hmi-card hmi-green"><div class="hmi-value" id="d_effavg">0%</div><div class="hmi-label">Efisiensi Rata-rata (Hari Ini)</div><div class="hmi-icon">&#9989;</div></div>
+  <div class="hmi-card hmi-orange"><div class="hmi-value" id="d_dandoriavg">0%</div><div class="hmi-label">Dandori Rata-rata (Hari Ini)</div><div class="hmi-icon">&#128736;</div></div>
+  <div class="hmi-card hmi-red"><div class="hmi-value" id="d_linestoppctavg">0%</div><div class="hmi-label">Line Stop Rata-rata (Hari Ini)</div><div class="hmi-icon">&#9940;</div></div>
+  <div class="hmi-card hmi-orange"><div class="hmi-value" id="d_stopterplanpctavg">0%</div><div class="hmi-label">% Line Stop Terplanning (Hari Ini)</div><div class="hmi-icon">&#128197;</div></div>
+</div>
 
     <div class="grid cols-2">
       <div class="chart-card"><h3>GSPH / Hari <span style="color:var(--text-faint); text-transform:none; font-weight:400;">(Gabungan Shift)</span></h3><canvas id="chartGsphHari"></canvas></div>
@@ -888,7 +907,7 @@ function normalizeEntry(e){
     material: Number(e.material) || 0,
     stroke: Number(e.stroke) || 0,
     pcsok: Number(e.pcsok) || 0,
-frekCoolant: Number(e.frekCoolant) || 0,   // ← tambah baris ini
+frekCoolant: e.frekCoolant || '',
 jenisScrap: e.jenisScrap || '',
     qtyNg: Number(e.qtyNg) || 0,
     spm: Number(e.spm) || 0,
@@ -1597,7 +1616,7 @@ function recomputeStrip(){
   renderCategoryBreakdown(problemRowsData);
   // (6) Waktu Efektif = Total Produksi (menit) - Total Line Stop (menit) - Waktu Line Stop Terplanning (menit) - Waktu Dandori (menit)
   const efektif = Math.max(totalMenit - lineStop - stopTerencana - dandori, 0);
-  const pctLineStop = totalMenit ? Math.round((lineStop/totalMenit)*100) : 0;
+  const pctLineStop = totalMenit ? Math.round(((lineStop + stopTerencana)/totalMenit)*100) : 0;
   // (4) % Dandori = Waktu Dandori (menit) / Total Produksi (menit)
   const pctDandori = totalMenit ? Math.round((dandori/totalMenit)*100) : 0;
   const pctStopTerplan = totalMenit ? Math.round((stopTerencana/totalMenit)*100) : 0;
@@ -1647,6 +1666,7 @@ function resetForm(){
   currentPartMax = null;              // ← tambah baris ini
   refreshMasterSelects('', '');
   initShiftSelect();
+  initSearchableSelect('f_frekcoolant');   // ← tambahan
   recomputeStrip();
 }
 document.getElementById('resetFormBtn').addEventListener('click', resetForm);
@@ -1699,7 +1719,7 @@ document.getElementById('confirmSaveBtn').addEventListener('click', async () => 
     material: Number(document.getElementById('f_material').value) || 0,
     stroke: Number(document.getElementById('f_stroke').value) || 0,
     pcsok: Number(document.getElementById('f_pcsok').value) || 0,
-frekCoolant: Number(document.getElementById('f_frekcoolant').value) || 0,   // ← tambah baris ini
+frekCoolant: document.getElementById('f_frekcoolant').value,
 jenisScrap: document.getElementById('f_jenisscrap').value.trim(),
     qtyNg: Number(document.getElementById('f_qtyng').value) || 0,
     spm: Number(document.getElementById('f_spm').value) || 0,
@@ -1956,27 +1976,46 @@ function renderDashboard(){
   const accent = currentMachine().color;
   const COLOR_RED = '#ef4444', COLOR_BLUE = '#60a5fa';
 
-  /* ---- Kartu ringkasan (HMI-style) ---- */
-  const totalStroke = entries.reduce((s,e)=> s+e.stroke, 0);
-  const totalNg = entries.reduce((s,e)=> s+e.qtyNg, 0);
-  const totalLineStopMenit = entries.reduce((s,e)=> s+e.computed.lineStop, 0);
+  /* ---- Kartu ringkasan (HMI-style) — semua untuk tanggal hari ini (berjalan/now) ---- */
+  const todayStr = new Date().toISOString().slice(0,10);
+  const todayEntries = entries.filter(e => e.tanggal === todayStr);
+  const todayRed = todayEntries.filter(e => e.shift !== 'BLUE');
+  const todayBlue = todayEntries.filter(e => e.shift === 'BLUE');
+
+  const totalStroke = todayEntries.reduce((s,e)=> s+e.stroke, 0);
+  const totalNg = todayEntries.reduce((s,e)=> s+e.qtyNg, 0);
+  const totalLineStopMenit = todayEntries.reduce((s,e)=> s+e.computed.lineStop, 0);
   const totalLineStopJam = (totalLineStopMenit/60).toFixed(1);
-  // (1/2) GSPH = Actual Produksi (Stroke) / Total Produksi (Jam) -- dipakai juga untuk rata-rata kartu
-  const gsphRatios = entries.filter(e => e.computed.totalJam > 0).map(e => e.stroke / e.computed.totalJam);
-  const gsphAvg = gsphRatios.length ? Math.round(gsphRatios.reduce((a,b)=>a+b,0)/gsphRatios.length) : 0;
-  const strokeAvg = entries.length ? Math.round(totalStroke/entries.length) : 0;
-  const effAvg = entries.length ? Math.round(entries.reduce((s,e)=> s+e.computed.pctEfisiensi,0)/entries.length) : 0;
-  const dandoriAvg = entries.length ? Math.round(entries.reduce((s,e)=> s+e.computed.pctDandori,0)/entries.length) : 0;
-  const lineStopPctAvg = entries.length ? Math.round(entries.reduce((s,e)=> s+e.computed.pctLineStop,0)/entries.length) : 0;
+
+  const gsphOf = (list) => {
+    const ratios = list.filter(e => e.computed.totalJam > 0).map(e => e.stroke / e.computed.totalJam);
+    return ratios.length ? Math.round(ratios.reduce((a,b)=>a+b,0)/ratios.length) : 0;
+  };
+  const strokeAvgOf = (list) => list.length ? Math.round(list.reduce((s,e)=> s+e.stroke,0)/list.length) : 0;
+
+  const gsphAvgRed = gsphOf(todayRed);
+const gsphAvgBlue = gsphOf(todayBlue);
+const gsphAvgGab = gsphOf(todayEntries);
+  const strokeAvgRed = strokeAvgOf(todayRed);
+  const strokeAvgBlue = strokeAvgOf(todayBlue);
+
+  const effAvg = todayEntries.length ? Math.round(todayEntries.reduce((s,e)=> s+e.computed.pctEfisiensi,0)/todayEntries.length) : 0;
+  const dandoriAvg = todayEntries.length ? Math.round(todayEntries.reduce((s,e)=> s+e.computed.pctDandori,0)/todayEntries.length) : 0;
+  const lineStopPctAvg = todayEntries.length ? Math.round(todayEntries.reduce((s,e)=> s+e.computed.pctLineStop,0)/todayEntries.length) : 0;
+  const stopTerplanPctAvg = todayEntries.length ? Math.round(todayEntries.reduce((s,e)=> s+e.computed.pctStopTerplan,0)/todayEntries.length) : 0;
 
   document.getElementById('d_totalstroke').textContent = totalStroke.toLocaleString('id-ID');
   document.getElementById('d_totalng').textContent = totalNg.toLocaleString('id-ID');
   document.getElementById('d_totallinestop').textContent = totalLineStopJam;
-  document.getElementById('d_gsphavg').textContent = gsphAvg.toLocaleString('id-ID');
-  document.getElementById('d_strokeavg').textContent = strokeAvg.toLocaleString('id-ID');
+  document.getElementById('d_gsphavg_gab').textContent = gsphAvgGab.toLocaleString('id-ID');
+  document.getElementById('d_gsphavg_red').textContent = gsphAvgRed.toLocaleString('id-ID');
+  document.getElementById('d_gsphavg_blue').textContent = gsphAvgBlue.toLocaleString('id-ID');
+  document.getElementById('d_strokeavg_red').textContent = strokeAvgRed.toLocaleString('id-ID');
+  document.getElementById('d_strokeavg_blue').textContent = strokeAvgBlue.toLocaleString('id-ID');
   document.getElementById('d_effavg').textContent = effAvg + '%';
   document.getElementById('d_dandoriavg').textContent = dandoriAvg + '%';
   document.getElementById('d_linestoppctavg').textContent = lineStopPctAvg + '%';
+  document.getElementById('d_stopterplanpctavg').textContent = stopTerplanPctAvg + '%';
 
   /* ---- Agregasi per hari, gabungan & per shift (21 hari terakhir yang ada datanya) ---- */
   const emptyShift = () => ({ strokeSum:0, ngSum:0, lineStopSum:0, totalJamSum:0 });
