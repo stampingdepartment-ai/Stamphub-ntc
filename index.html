@@ -423,10 +423,11 @@ input[type="time"]::-webkit-calendar-picker-indicator{
   100% { transform: translateX(0); } 
 }
   .login-card{
-    background: var(--panel); border:1px solid var(--border); border-radius: 14px;
-    padding: 36px 32px; max-width:400px; width:100%; text-align:center;
-    box-shadow: 0 20px 60px rgba(0,0,0,.5);
-  }
+  position: relative; z-index: 1;
+  background: var(--panel); border:1px solid var(--border); border-radius: 14px;
+  padding: 36px 32px; max-width:400px; width:100%; text-align:center;
+  box-shadow: 0 20px 60px rgba(0,0,0,.5);
+}
   .login-logo{ display:flex; justify-content:center; margin-bottom:20px; }
   .login-logo .brand-logo{ height:44px; width:auto; }
   .login-title{ font-size:19px; font-weight:700; margin:0 0 24px; line-height:1.4; }
@@ -974,11 +975,11 @@ function addMasterValue(machine, type, value, max){
     } else {
       all[machine].part.push({ nama: value, max: (max===undefined||max===null||max==='') ? null : Number(max) });
     }
-    all[machine].part.sort((a,b)=> a.nama.localeCompare(b.nama));
+    all[machine].part.sort((a,b)=> String((a && a.nama) || '').localeCompare(String((b && b.nama) || '')));
   } else {
     if(!all[machine][type].includes(value)){
       all[machine][type].push(value);
-      all[machine][type].sort((a,b)=> a.localeCompare(b));
+      all[machine][type].sort((a,b)=> String(a || '').localeCompare(String(b || '')));
     }
   }
   setMasterAll(all);
@@ -1147,10 +1148,16 @@ function setConfig(cfg){ localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg)); 
 // Kalau halaman dibuka sebagai HTML biasa (SELF_SCRIPT_URL kosong), config manual
 // yang tersimpan di localStorage tetap dihormati (mode "Hubungkan Sheets" manual).
 (function autoConnect(){
-  if(typeof SELF_SCRIPT_URL === 'string' && SELF_SCRIPT_URL.indexOf('http') === 0){
+  // Hanya auto-sync ke SELF_SCRIPT_URL kalau halaman ini benar-benar dibuka
+  // sebagai Apps Script Web App (domain script.google.com / googleusercontent.com).
+  // Kalau dihost di tempat lain (mis. Vercel), JANGAN timpa URL yang sudah
+  // disimpan manual oleh user lewat modal "Hubungkan Sheets" — ini yang
+  // sebelumnya bikin koneksi "putus" tiap reload.
+  const isAppsScriptHost = /(^|\.)script\.google\.com$|(^|\.)googleusercontent\.com$/i.test(location.hostname);
+  if(isAppsScriptHost && typeof SELF_SCRIPT_URL === 'string' && SELF_SCRIPT_URL.indexOf('http') === 0){
     const cfg = getConfig();
     if(cfg.scriptUrl !== SELF_SCRIPT_URL){
-      setConfig({ scriptUrl: SELF_SCRIPT_URL });
+      setConfig({ ...cfg, scriptUrl: SELF_SCRIPT_URL });
       console.log('[StampHub] scriptUrl diperbarui otomatis ke deployment aktif:', SELF_SCRIPT_URL);
     }
   }
@@ -1205,7 +1212,6 @@ async function apiAddMaster(type, value, max){
   const data = await res.json();
   if(!data.ok) throw new Error(data.error || 'Gagal menyimpan ke daftar master di Sheets');
 }
-
 /* ============================================================
    LOGIN
 ============================================================ */
