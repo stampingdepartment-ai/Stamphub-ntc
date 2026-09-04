@@ -921,15 +921,15 @@ jenisScrap: e.jenisScrap || '',
     stopTerplanJenis: e.stopTerplanJenis || '',
     stopTerplanMenit: Number(e.stopTerplanMenit) || 0,
     computed: {
-  totalMenit: Number(c.totalMenit) || 0,
-  totalJam: Number(c.totalJam) || 0,
-  lineStop: Number(c.lineStop) || 0,
-  efektif: Number(c.efektif) || 0,
-  pctLineStop: Number(c.pctLineStop) || 0,
-  pctDandori: Number(c.pctDandori) || 0,
-  pctEfisiensi: Number(c.pctEfisiensi) || 0,
-  pctStopTerplan: Number(c.pctStopTerplan) || 0,   // ← baris baru, tambahkan di sini
-},
+      totalMenit: Number(c.totalMenit) || 0,
+      totalJam: Number(c.totalJam) || 0,
+      lineStop: Number(c.lineStop) || 0,
+      efektif: Number(c.efektif) || 0,
+      pctLineStop: Number(c.pctLineStop) || 0,
+      pctDandori: Number(c.pctDandori) || 0,
+      pctEfisiensi: Number(c.pctEfisiensi) || 0,
+      pctStopTerplan: Number(c.pctStopTerplan) || 0, 
+    },
     problems: Array.isArray(e.problems) ? e.problems.map(p => ({
       kategori: (p && p.kategori) || 'Others',
       keterangan: (p && p.keterangan) || '',
@@ -1013,25 +1013,45 @@ function initSearchableSelect(selectId){
   if(!el) return;
   if(choicesInstances[selectId]){
     choicesInstances[selectId].destroy();
+    delete choicesInstances[selectId];
   }
-  choicesInstances[selectId] = new Choices(el, {
-    searchEnabled: true,
-    shouldSort: false,
-    itemSelectText: '',
-    searchResultLimit: 20,
-  });
+  // FIX: kalau library Choices.js gagal dimuat dari CDN (mis. jaringan terbatas),
+  // jangan sampai crash dan menghentikan seluruh script — cukup pakai <select> biasa.
+  if(typeof Choices === 'undefined'){
+    console.warn('Choices.js belum termuat, dropdown "' + selectId + '" pakai mode biasa.');
+    return;
+  }
+  try {
+    choicesInstances[selectId] = new Choices(el, {
+      searchEnabled: true,
+      shouldSort: false,
+      itemSelectText: '',
+      searchResultLimit: 20,
+    });
+  } catch(err) {
+    console.warn('Gagal inisialisasi Choices.js untuk "' + selectId + '":', err);
+  }
 }
 function initShiftSelect(){
   const el = document.getElementById('f_shift');
   if(!el) return;
   if(choicesInstances['f_shift']){
     choicesInstances['f_shift'].destroy();
+    delete choicesInstances['f_shift'];
   }
-  choicesInstances['f_shift'] = new Choices(el, {
-    searchEnabled: false,
-    shouldSort: false,
-    itemSelectText: '',
-  });
+  if(typeof Choices === 'undefined'){
+    console.warn('Choices.js belum termuat, dropdown shift pakai mode biasa.');
+    return;
+  }
+  try {
+    choicesInstances['f_shift'] = new Choices(el, {
+      searchEnabled: false,
+      shouldSort: false,
+      itemSelectText: '',
+    });
+  } catch(err) {
+    console.warn('Gagal inisialisasi Choices.js untuk shift:', err);
+  }
 }
 function renderMasterSelect(selectId, machine, type, selectedValue){
   const el = document.getElementById(selectId);
@@ -1777,24 +1797,6 @@ function badgeForStatus(s){
   return '<span class="badge badge-good">Sesuai</span>';
 }
 
-function renderRiwayatHeader(){
-  const theadRow = document.querySelector('#view-riwayat table thead tr');
-  if(!theadRow) return;
-  const cats = getProblemCategories();
-  const catTh = cats.map(c => `<th>${c} Ket</th><th>${c} Menit</th>`).join('');
-  theadRow.innerHTML = `
-    <th>Tanggal</th><th>Waktu Input</th><th>Shift</th><th>PIC</th><th>Part Nomor</th>
-    <th>Planning</th><th>Material</th><th>Stroke</th><th>Pcs OK</th>
-    <th>Jenis Scrap</th><th>Qty NG</th><th>SPM</th><th>SPM Kajuhekin</th>
-    <th>GSPH</th><th>Status</th><th>Jam Mulai</th><th>Jam Selesai</th>
-    <th>Total (Jam)</th><th>Total (Menit)</th><th>Dandori</th><th>%Dandori</th>
-    <th>Stop Terplan</th><th>Menit Terplan</th><th>%Stop Terplan</th><th>Total Line Stop</th><th>%Line Stop</th>
-    <th>Waktu Efektif</th><th>%Efisiensi</th>
-${catTh}
-<th>Konfirmasi</th><th>Frek. Coolant</th><th>Aksi</th>
-  `;
-}
-
 function aggregateProblemsForDisplay(problems, categories){
   const acc = {};
   categories.forEach(c => acc[c] = { ket: [], menit: 0 });
@@ -1804,6 +1806,25 @@ function aggregateProblemsForDisplay(problems, categories){
     acc[cat].menit += Number(p.menit) || 0;
   });
   return categories.map(c => ({ ket: acc[c].ket.join(' | ') || '-', menit: acc[c].menit }));
+}
+
+function renderRiwayatHeader(){
+  const theadRow = document.querySelector('#view-riwayat table thead tr');
+  if(!theadRow) return;
+  const cats = getProblemCategories();
+  const catTh = cats.map(c => `<th>${c} Ket</th><th>${c} Menit</th>`).join('');
+  // URUTAN SUDAH DISELARASKAN 100% DENGAN renderRiwayat() (baris data) DI BAWAH INI
+  theadRow.innerHTML = `
+    <th>Tanggal</th><th>Waktu Input</th><th>Shift</th><th>PIC</th><th>Part Nomor</th>
+    <th>Planning</th><th>Material</th><th>Stroke</th><th>Pcs OK</th>
+    <th>Jenis Scrap</th><th>Qty NG</th><th>SPM</th><th>SPM Kajuhekin</th><th>GSPH</th>
+    <th>Status</th><th>Jam Mulai</th><th>Jam Selesai</th>
+    <th>Total Jam</th><th>Total Menit</th><th>Dandori</th><th>% Dandori</th>
+    <th>Stop Terplan Jenis</th><th>Stop Terplan Menit</th><th>% Stop Terplan</th>
+    <th>Total Line Stop</th><th>% Line Stop</th><th>Waktu Efektif</th><th>% Efisiensi</th>
+    ${catTh}
+    <th>Konfirmasi</th><th>Frek Coolant</th><th>Aksi</th>
+  `;
 }
 
 function renderRiwayat(){
@@ -1822,6 +1843,8 @@ function renderRiwayat(){
     const tr = document.createElement('tr');
     const catData = aggregateProblemsForDisplay(entry.problems, cats);
     const catTds = catData.map(d => `<td>${escapeHtml(d.ket)}</td><td>${d.menit}</td>`).join('');
+    
+    // PERBAIKAN: Menghapus duplikasi kolom terencana agar urutannya pas dengan Header & Google Sheets
     tr.innerHTML = `
       <td>${entry.tanggal}</td>
       <td>${entry.waktuInput || '-'}</td>
@@ -1846,16 +1869,14 @@ function renderRiwayat(){
       <td>${entry.computed.pctDandori}%</td>
       <td>${escapeHtml(entry.stopTerplanJenis || '-')}</td>
       <td>${entry.stopTerplanMenit}</td>
-      <td>${escapeHtml(entry.stopTerplanJenis || '-')}</td>
-<td>${entry.stopTerplanMenit}</td>
-<td>${entry.computed.pctStopTerplan}%</td>
+      <td>${entry.computed.pctStopTerplan}%</td>
       <td>${entry.computed.lineStop}</td>
       <td>${entry.computed.pctLineStop}%</td>
       <td>${entry.computed.efektif}</td>
       <td>${entry.computed.pctEfisiensi}%</td>
       ${catTds}
       <td>${entry.konfirmasi ? '✅' : '—'}</td>
-      <td>${entry.frekCoolant}</td>
+      <td>${entry.frekCoolant || '-'}</td>
       <td>
         ${isAdminUser() ? `<button class="btn btn-ghost btn-sm" data-edit="${entry.id}">Edit</button>
         <button class="btn btn-danger btn-sm" data-del="${entry.id}">Hapus</button>` : '—'}
