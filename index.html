@@ -867,10 +867,10 @@ input[type="time"]::-webkit-calendar-picker-indicator{
    CONFIG
 ============================================================ */
 const MACHINES = [
-  { id: '1600TR', label: 'Mc_1600TR', color: '#2dd4bf' },
-  { id: '2500TR', label: 'Mc_2500TR', color: '#ec4899' },
-  { id: '800BP',  label: 'Mc_800BP',  color: '#ef4444' },
-  { id: '300BP',  label: 'Mc_300BP',  color: '#a855f7' },
+  { id: '1600TR', label: 'Mc_1600TR', color: '#2dd4bf', target: 1050 }, 
+  { id: '2500TR', label: 'Mc_2500TR', color: '#ec4899', target: 1050 }, 
+  { id: '800BP',  label: 'Mc_800BP',  color: '#ef4444', target: 1700 }, 
+  { id: '300BP',  label: 'Mc_300BP',  color: '#a855f7', target: 2000 },
 ];
 const STORAGE_KEY = 'laporanProduksiStp2_v1';
 let state = {
@@ -2098,22 +2098,60 @@ const gsphAvgGab = gsphOf(todayEntries);
   destroyCharts();
   const gridColor = 'rgba(255,255,255,0.06)';
   const tickColor = '#9aa2a8';
+  // =========================================================================
+  // GARIS TARGET DINAMIS (Mengikuti properti target dari mesin yang aktif)
+  // =========================================================================
+  const mesinAktif = currentMachine();
+  const NILAI_TARGET_GSPH = mesinAktif && mesinAktif.target ? mesinAktif.target : 0;
+
+  // Plugin Khusus untuk menggambar Garis Target jika nilai target > 0
+  const pluginTargetLine = {
+    id: 'targetLine',
+    afterDraw: (chart) => {
+      if (!NILAI_TARGET_GSPH) return; // jika target tidak diset, jangan gambar apa-apa
+      
+      const { ctx, chartArea: { left, right }, scales: { y } } = chart;
+      const yValue = y.getPixelForValue(NILAI_TARGET_GSPH);
+      
+      ctx.save();
+      ctx.strokeStyle = '#f4b740'; // Warna garis target (Kuning/Orange tema)
+      ctx.lineWidth = 2;            // Ketebalan garis
+      ctx.setLineDash([5, 5]);      // Membuat garis putus-putus biar rapi
+      
+      ctx.beginPath();
+      ctx.moveTo(left, yValue);
+      ctx.lineTo(right, yValue);
+      ctx.stroke();
+      
+      // Tambahan teks label di ujung kanan atas garis
+      ctx.fillStyle = '#f4b740';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText('Target: ' + NILAI_TARGET_GSPH, right - 5, yValue - 5);
+      ctx.restore();
+    }
+  };
   const baseOpts = {
     responsive:true,
     plugins:{ legend:{ display:false } },
+    layout: {
+      padding: {
+        top: 29
+      }
+    },
     scales:{
       x:{ grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} } },
-      y:{ grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} }, beginAtZero:true }
+      y:{ grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} }, min: 0, max: NILAI_TARGET_GSPH + 150 }
     }
   };
-  const groupedOpts = {
-    responsive:true,
-    plugins:{ legend:{ display:true, labels:{ color:tickColor, font:{size:11}, boxWidth:12 } } },
-    scales:{
-      x:{ grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} } },
-      y:{ grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} }, beginAtZero:true }
-    }
-  };
+const groupedOpts = {
+  responsive:true,
+  plugins:{ legend:{ display:true, labels:{ color:tickColor, font:{size:10}, boxWidth:10 } } },
+  scales:{
+    x:{ grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} } },
+    y:{ grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} }, suggestedMax: NILAI_TARGET_GSPH + 150 }
+  }
+};
   const yamazumiOpts = {
     responsive:true,
     plugins:{ legend:{ display:true, labels:{ color:tickColor, font:{size:11}, boxWidth:12 } } },
@@ -2130,18 +2168,21 @@ const gsphAvgGab = gsphOf(todayEntries);
 
   // (1) GSPH / Hari (Gabungan) = Total Stroke gabungan hari / Total Produksi (Jam) gabungan hari
   charts.gsphHari = new Chart(document.getElementById('chartGsphHari'), {
-    type:'bar',
-    data:{ labels: monthLabels, datasets:[{ data: monthDays.map(d=> hasDay(d) ? ratio(byDay[d].strokeSum, byDay[d].totalJamSum) : null), backgroundColor: accent, borderRadius:3 }] },
-    options: baseOpts
+    type: 'bar',
+    data: { labels: monthLabels, datasets:[{ data: monthDays.map(d=> hasDay(d) ? ratio(byDay[d].strokeSum, byDay[d].totalJamSum) : null), backgroundColor: accent, borderRadius:3 },
+    ]},
+    options: baseOpts,
+    plugins: [pluginTargetLine] // <-- TAMBAHKAN BARIS INI
   });
   // (2) GSPH / Shift = Stroke per shift / Jam per shift, dipisah Merah & Biru
   charts.gsphShift = new Chart(document.getElementById('chartGsphShift'), {
-    type:'bar',
-    data:{ labels: monthLabels, datasets:[
+    type: 'bar',
+    data: { labels: monthLabels, datasets:[
       { label:'Merah (RED)', data: monthDays.map(d=> hasDay(d) ? ratio(byDay[d].byShift.RED.strokeSum, byDay[d].byShift.RED.totalJamSum) : null), backgroundColor: COLOR_RED, borderRadius:3 },
       { label:'Biru (BLUE)', data: monthDays.map(d=> hasDay(d) ? ratio(byDay[d].byShift.BLUE.strokeSum, byDay[d].byShift.BLUE.totalJamSum) : null), backgroundColor: COLOR_BLUE, borderRadius:3 },
     ]},
-    options: groupedOpts
+    options: groupedOpts,
+    plugins: [pluginTargetLine] // <-- TAMBAHKAN BARIS INI
   });
 
   // (3) Total Stroke / Hari (Gabungan)
@@ -2206,11 +2247,20 @@ const gsphAvgGab = gsphOf(todayEntries);
   const lineStopEntries = Object.entries(lineStopCat)
     .map(([k,v]) => [k, Math.round(v/activeDaysInMonth)])
     .filter(([,v]) => v > 0);
+    const warnaLineStop = [
+    '#2dd4bf', // Terencana: Toska
+    '#3b82f6', // Mesin: Biru
+    '#ef4444', // Dies: Merah
+    '#10b981', // Finger: Hijau
+    '#f97316', // Missgrip: Orange
+    '#6b7280', // Material: Abu-abu
+    '#eab308'  // Others: Kuning
+  ];
   charts.lineStopPie = new Chart(document.getElementById('chartLineStopPie'), {
     type:'pie',
     data:{
       labels: lineStopEntries.map(([k])=>k),
-      datasets:[{ data: lineStopEntries.map(([,v])=>v), backgroundColor: pieColors }]
+      datasets:[{ data: lineStopEntries.map(([_,v])=>v), backgroundColor: warnaLineStop }]
     },
     options: pieOpts
   });
