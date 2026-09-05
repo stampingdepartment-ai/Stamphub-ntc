@@ -803,9 +803,12 @@ input[type="time"]::-webkit-calendar-picker-indicator{
       <div class="chart-card"><h3>Total NG / Shift <span style="color:var(--text-faint); text-transform:none; font-weight:400;">(Merah vs Biru)</span></h3><canvas id="chartNgShift"></canvas></div>
     </div>
     <div class="grid cols-2" style="margin-top:14px;">
-      <div class="chart-card"><h3>Line Stop (menit) / Hari <span style="color:var(--text-faint); text-transform:none; font-weight:400;">(Gabungan Shift)</span></h3><canvas id="chartLineStopShift"></canvas></div>
-      <div class="chart-card"><h3>% Efisiensi vs % Dandori vs % Line Stop / Hari</h3><canvas id="chartPctCompare"></canvas></div>
-    </div>
+  <div class="chart-card"><h3>Line Stop (menit) / Hari <span style="color:var(--text-faint); text-transform:none; font-weight:400;">(Gabungan Shift)</span></h3><canvas id="chartLineStopShift"></canvas></div>
+  <div class="chart-card"><h3>Line Stop (menit) / Shift <span style="color:var(--text-faint); text-transform:none; font-weight:400;">(Merah vs Biru)</span></h3><canvas id="chartLineStopByShift"></canvas></div>
+</div>
+<div class="grid cols-2" style="margin-top:14px;">
+  <div class="chart-card" style="grid-column:1 / -1;"><h3>% Efisiensi vs % Dandori vs % Line Stop / Hari</h3><canvas id="chartPctCompare"></canvas></div>
+</div>
     <div class="grid cols-2" style="margin-top:14px;">
       <div class="chart-card"><h3>Breakdown Line Stop per Jenis <span style="color:var(--text-faint); text-transform:none; font-weight:400;">(Rata-rata/Hari, Bulan Ini)</span></h3><canvas id="chartLineStopPie"></canvas></div>
       <div class="chart-card"><h3>Breakdown NG per Jenis Scrap <span style="color:var(--text-faint); text-transform:none; font-weight:400;">(Pareto, Total Bulan Ini)</span></h3><canvas id="chartNgPie"></canvas></div>
@@ -1225,6 +1228,17 @@ function isAdminUser(){
   const session = getLoginSession();
   return !!(session && session.role === 'admin');
 }
+function isOperatorUser(){
+  const session = getLoginSession();
+  return !!(session && session.role === 'operator');
+}
+/** Operator: boleh input laporan baru & lihat semua data (riwayat/dashboard/summary),
+ *  TAPI tidak boleh edit/hapus laporan, dan tidak boleh menambahkan PIC/Part/Jenis
+ *  Scrap baru — dua hal itu tetap dicek terpisah lewat isAdminUser() di tempat lain
+ *  (tombol Edit/Hapus di renderRiwayat, opsi "+ Tambah Baru..." di renderMasterSelect). */
+function canInputUser(){
+  return isAdminUser() || isOperatorUser();
+}
 async function apiLogin(employeeId, password){
   const cfg = getConfig();
   if(!cfg.scriptUrl) throw new Error('Aplikasi belum terhubung ke Google Sheets, hubungi admin');
@@ -1271,11 +1285,11 @@ function updateLoginInfo(){
   }
 }
 function applyRolePermissions(){
-  const isAdmin = isAdminUser();
+  const canInput = canInputUser(); // admin ATAU operator boleh lihat & pakai tab Input
   const inputBtn = document.querySelector('#tabs button[data-view="input"]');
-  if(inputBtn) inputBtn.style.display = isAdmin ? '' : 'none';
+  if(inputBtn) inputBtn.style.display = canInput ? '' : 'none';
 
-  if(!isAdmin && state.view === 'input'){
+  if(!canInput && state.view === 'input'){
     state.view = 'riwayat';
     document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('active', b.dataset.view === 'riwayat'));
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -1482,7 +1496,7 @@ function applyAccent(){
 
 function updateMachineSelectVisibility(){
   const group = document.querySelector('.tab-group');
-  if(group) group.classList.toggle('expanded', state.view === 'input' || !isAdminUser());
+  if(group) group.classList.toggle('expanded', state.view === 'input' || !canInputUser());
 }
 document.getElementById('tabs').addEventListener('click', (e) => {
   const btn = e.target.closest('button');
@@ -2232,7 +2246,15 @@ const groupedOpts = {
     ]},
     options: yamazumiOpts
   });
-
+// (BARU) Line Stop (menit) / Shift, dipisah Merah & Biru — sama seperti pola GSPH/Stroke/NG per Shift
+  charts.lineStopByShift = new Chart(document.getElementById('chartLineStopByShift'), {
+    type:'bar',
+    data:{ labels: monthLabels, datasets:[
+      { label:'Merah (RED)', data: monthDays.map(d=> hasDay(d) ? byDay[d].byShift.RED.lineStopSum : null), backgroundColor: COLOR_RED, borderRadius:3 },
+      { label:'Biru (BLUE)', data: monthDays.map(d=> hasDay(d) ? byDay[d].byShift.BLUE.lineStopSum : null), backgroundColor: COLOR_BLUE, borderRadius:3 },
+    ]},
+    options: groupedOpts
+  });
   charts.pctCompare = new Chart(document.getElementById('chartPctCompare'), {
     type:'bar',
     data:{ labels: monthLabels, datasets:[
