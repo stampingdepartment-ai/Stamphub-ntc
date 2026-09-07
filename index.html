@@ -2180,6 +2180,57 @@ const groupedOpts = {
       y:{ stacked:true, grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} }, beginAtZero:true }
     }
   };
+    // Skala khusus NG: max 200 pcs
+  const ngHariOpts = {
+    responsive:true,
+    plugins:{ legend:{ display:false } },
+    scales:{
+      x:{ grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} } },
+      y:{ grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} }, min:0, max:100 }
+    }
+  };
+  const ngShiftOpts = {
+    responsive:true,
+    plugins:{ legend:{ display:true, labels:{ color:tickColor, font:{size:10}, boxWidth:10 } } },
+    scales:{
+      x:{ grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} } },
+      y:{ grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} }, min:0, max:100 }
+    }
+  };
+  // Skala khusus Line Stop: max 250 menit
+  const lineStopHariOpts = {
+    responsive:true,
+    plugins:{ legend:{ display:true, labels:{ color:tickColor, font:{size:11}, boxWidth:12 } } },
+    scales:{
+      x:{ stacked:true, grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} } },
+      y:{ stacked:true, grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} }, min:0, max:250 }
+    }
+  };
+  const lineStopShiftOpts = {
+    responsive:true,
+    plugins:{ legend:{ display:true, labels:{ color:tickColor, font:{size:10}, boxWidth:10 } } },
+    scales:{
+      x:{ grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} } },
+      y:{ grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} }, min:0, max:250 }
+    }
+  };
+    // Skala Stroke: auto mengikuti data tertinggi (tanpa batas atas tetap)
+  const strokeHariOpts = {
+    responsive:true,
+    plugins:{ legend:{ display:false } },
+    scales:{
+      x:{ grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} } },
+      y:{ grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} }, beginAtZero:true }
+    }
+  };
+  const strokeShiftOpts = {
+    responsive:true,
+    plugins:{ legend:{ display:true, labels:{ color:tickColor, font:{size:10}, boxWidth:10 } } },
+    scales:{
+      x:{ grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} } },
+      y:{ grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} }, beginAtZero:true }
+    }
+  };
   const pieOpts = {
     responsive:true,
     plugins:{ legend:{ display:true, position:'bottom', labels:{ color:tickColor, font:{size:11}, boxWidth:12 } } }
@@ -2209,7 +2260,7 @@ const groupedOpts = {
   charts.strokeHari = new Chart(document.getElementById('chartStrokeHari'), {
     type:'bar',
     data:{ labels: monthLabels, datasets:[{ data: monthDays.map(d=> hasDay(d) ? byDay[d].strokeSum : null), backgroundColor: '#60a5fa', borderRadius:3 }] },
-    options: baseOpts
+    options: strokeHariOpts
   });
   // (4) Total Stroke / Shift (Merah vs Biru)
   charts.strokeShift = new Chart(document.getElementById('chartStrokeShift'), {
@@ -2218,14 +2269,14 @@ const groupedOpts = {
       { label:'Merah (RED)', data: monthDays.map(d=> hasDay(d) ? byDay[d].byShift.RED.strokeSum : null), backgroundColor: COLOR_RED, borderRadius:3 },
       { label:'Biru (BLUE)', data: monthDays.map(d=> hasDay(d) ? byDay[d].byShift.BLUE.strokeSum : null), backgroundColor: COLOR_BLUE, borderRadius:3 },
     ]},
-    options: groupedOpts
+    options: strokeShiftOpts
   });
 
   // (7) Total NG / Hari (Gabungan)
   charts.ngHari = new Chart(document.getElementById('chartNgHari'), {
     type:'bar',
     data:{ labels: monthLabels, datasets:[{ data: monthDays.map(d=> hasDay(d) ? byDay[d].ngSum : null), backgroundColor: '#ef4444', borderRadius:3 }] },
-    options: baseOpts
+    options: ngHariOpts
   });
   // (8) Total NG / Shift (Merah vs Biru)
   charts.ngShift = new Chart(document.getElementById('chartNgShift'), {
@@ -2234,7 +2285,7 @@ const groupedOpts = {
       { label:'Merah (RED)', data: monthDays.map(d=> hasDay(d) ? byDay[d].byShift.RED.ngSum : null), backgroundColor: COLOR_RED, borderRadius:3 },
       { label:'Biru (BLUE)', data: monthDays.map(d=> hasDay(d) ? byDay[d].byShift.BLUE.ngSum : null), backgroundColor: COLOR_BLUE, borderRadius:3 },
     ]},
-    options: groupedOpts
+    options: ngShiftOpts
   });
 
   // (6) Line Stop (menit) / Hari (Gabungan Shift), stacked seperti grafik Efisiensi
@@ -2244,7 +2295,7 @@ const groupedOpts = {
       { label:'Line Stop Terencana', data: monthDays.map(d=> hasDay(d) ? byDay[d].terencanaSum : null), backgroundColor:'#f4b740', borderRadius:2 },
       { label:'Line Stop Tidak Terencana', data: monthDays.map(d=> hasDay(d) ? byDay[d].takTerencanaSum : null), backgroundColor:'#ef4444', borderRadius:2 },
     ]},
-    options: yamazumiOpts
+    options: lineStopHariOpts
   });
 // (BARU) Line Stop (menit) / Shift, dipisah Merah & Biru — sama seperti pola GSPH/Stroke/NG per Shift
   charts.lineStopByShift = new Chart(document.getElementById('chartLineStopByShift'), {
@@ -2253,7 +2304,7 @@ const groupedOpts = {
       { label:'Merah (RED)', data: monthDays.map(d=> hasDay(d) ? byDay[d].byShift.RED.lineStopSum : null), backgroundColor: COLOR_RED, borderRadius:3 },
       { label:'Biru (BLUE)', data: monthDays.map(d=> hasDay(d) ? byDay[d].byShift.BLUE.lineStopSum : null), backgroundColor: COLOR_BLUE, borderRadius:3 },
     ]},
-    options: groupedOpts
+    options: lineStopShiftOpts
   });
   charts.pctCompare = new Chart(document.getElementById('chartPctCompare'), {
     type:'bar',
