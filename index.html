@@ -7,9 +7,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
 <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 <script>
-  // Diisi otomatis oleh Apps Script saat halaman ini di-deploy & dibuka.
-  // Kalau file ini dibuka langsung sebagai HTML biasa (bukan lewat Apps Script), akan kosong.
-  var SELF_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyHPoaYJM-aiCuKHEfbnmi7i_NxjZDGBKaVnWL88B8JRp79PzOUSii9_EsQx7s62rusWA/exec";
+  var SELF_SCRIPT_URL = "<?= scriptUrl ?>";
 </script>
 <script>
 /*!
@@ -1151,13 +1149,7 @@ function setConfig(cfg){ localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg)); 
 // Kalau halaman dibuka sebagai HTML biasa (SELF_SCRIPT_URL kosong), config manual
 // yang tersimpan di localStorage tetap dihormati (mode "Hubungkan Sheets" manual).
 (function autoConnect(){
-  // Hanya auto-sync ke SELF_SCRIPT_URL kalau halaman ini benar-benar dibuka
-  // sebagai Apps Script Web App (domain script.google.com / googleusercontent.com).
-  // Kalau dihost di tempat lain (mis. Vercel), JANGAN timpa URL yang sudah
-  // disimpan manual oleh user lewat modal "Hubungkan Sheets" — ini yang
-  // sebelumnya bikin koneksi "putus" tiap reload.
-  const isAppsScriptHost = /(^|\.)script\.google\.com$|(^|\.)googleusercontent\.com$/i.test(location.hostname);
-  if(isAppsScriptHost && typeof SELF_SCRIPT_URL === 'string' && SELF_SCRIPT_URL.indexOf('http') === 0){
+  if(typeof SELF_SCRIPT_URL === 'string' && SELF_SCRIPT_URL.indexOf('http') === 0){
     const cfg = getConfig();
     if(cfg.scriptUrl !== SELF_SCRIPT_URL){
       setConfig({ ...cfg, scriptUrl: SELF_SCRIPT_URL });
