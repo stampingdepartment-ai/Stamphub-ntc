@@ -1150,19 +1150,20 @@ function setConfig(cfg){ localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg)); 
 // setiap kali script di-deploy ulang (root cause dari error "Aksi tidak dikenali").
 // Kalau halaman dibuka sebagai HTML biasa (SELF_SCRIPT_URL kosong), config manual
 // yang tersimpan di localStorage tetap dihormati (mode "Hubungkan Sheets" manual).
+const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyHPoaYJM-aiCuKHEfbnmi7i_NxjZDGBKaVnWL88B8JRp79PzOUSii9_EsQx7s62rusWA/exec";
+
 (function autoConnect(){
-  // Hanya auto-sync ke SELF_SCRIPT_URL kalau halaman ini benar-benar dibuka
-  // sebagai Apps Script Web App (domain script.google.com / googleusercontent.com).
-  // Kalau dihost di tempat lain (mis. Vercel), JANGAN timpa URL yang sudah
-  // disimpan manual oleh user lewat modal "Hubungkan Sheets" — ini yang
-  // sebelumnya bikin koneksi "putus" tiap reload.
   const isAppsScriptHost = /(^|\.)script\.google\.com$|(^|\.)googleusercontent\.com$/i.test(location.hostname);
+  const cfg = getConfig();
+
   if(isAppsScriptHost && typeof SELF_SCRIPT_URL === 'string' && SELF_SCRIPT_URL.indexOf('http') === 0){
-    const cfg = getConfig();
     if(cfg.scriptUrl !== SELF_SCRIPT_URL){
       setConfig({ ...cfg, scriptUrl: SELF_SCRIPT_URL });
       console.log('[StampHub] scriptUrl diperbarui otomatis ke deployment aktif:', SELF_SCRIPT_URL);
     }
+  } else if(!cfg.scriptUrl){
+    setConfig({ ...cfg, scriptUrl: DEFAULT_SCRIPT_URL });
+    console.log('[StampHub] scriptUrl diisi otomatis dari default:', DEFAULT_SCRIPT_URL);
   }
 })();
 
