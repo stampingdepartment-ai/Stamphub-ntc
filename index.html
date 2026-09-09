@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Stamphub-Ntc — Laporan Produksi Stamping</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#14b8a6">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 <script>
   // Diisi otomatis oleh Apps Script saat halaman ini di-deploy & dibuka.
@@ -2471,6 +2474,9 @@ renderAll();
 syncFromServer(false);
 syncMasterFromServer();
 checkLoginGate();
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js');
+}
 </script>
 </body>
 </html>
