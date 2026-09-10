@@ -1276,7 +1276,28 @@ function updateLoginInfo(){
     if(card){
       card.style.display = 'flex';
       document.getElementById('sidebarUserName').textContent = session.name;
-      document.getElementById('sidebarUserAvatar').textContent = session.name.trim().charAt(0).toUpperCase();
+      const avatarEl = document.getElementById('sidebarUserAvatar');
+      // Cek apakah user memiliki link foto profil di database
+      if(session.fotoUrl && session.fotoUrl.trim() !== ""){
+        avatarEl.innerHTML = ''; // Bersihkan huruf inisial bawaan
+        avatarEl.style.background = 'transparent';
+
+        const img = document.createElement('img');
+        img.src = session.fotoUrl;
+        img.alt = session.name;
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;';
+
+        // Jika link foto rusak, otomatis kembalikan ke inisial huruf agar tidak error
+        img.onerror = () => {
+          avatarEl.style.background = 'var(--accent)';
+          avatarEl.textContent = session.name.trim().charAt(0).toUpperCase();
+        };
+        avatarEl.appendChild(img);
+      } else {
+        // Jika tidak ada foto, tampilkan inisial huruf pertama seperti biasa
+        avatarEl.style.background = 'var(--accent)';
+        avatarEl.textContent = session.name.trim().charAt(0).toUpperCase();
+      }
     }
     if(greetBar){
       greetBar.style.display = 'block';
@@ -1332,7 +1353,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   btn.textContent = 'Memproses...';
   try{
     const result = await apiLogin(id, pw);
-    setLoginSession({ employeeId: result.employeeId || id, name: result.name || id, role: result.role || 'user' });
+    setLoginSession({ employeeId: result.employeeId || id, name: result.name || id, role: result.role || 'user', fotoUrl: result.fotoUrl || '' });
     document.getElementById('loginForm').reset();
     showApp();
   }catch(err){
