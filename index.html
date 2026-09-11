@@ -3005,7 +3005,12 @@ function buildMonthlyMachineData(){
 }
 
 /** Render ke-4 tabel bulanan (GSPH, Stroke, Line Stop, NG) sekaligus. Dipanggil dari renderSummary()
- *  supaya selalu update tiap kali tab Summary dibuka, dan mandiri (tidak bergantung filter tanggal). */
+ *  supaya selalu update tiap kali tab Summary dibuka, dan mandiri (tidak bergantung filter tanggal).
+ *  Tabel GSPH punya kolom tambahan: "Target" (setelah Mesin) dan "Rata-rata" + "Achievement GSPH %"
+ *  (di akhir). Tabel Stroke/Line Stop/NG cuma tambah kolom "Rata-rata" di akhir. Rata-rata dihitung
+ *  hanya dari bulan yang benar-benar ada produksinya (totalJamSum > 0), bukan dibagi 12, supaya bulan
+ *  yang belum berjalan/belum ada datanya tidak menurunkan rata-rata secara tidak wajar. Nama mesin
+ *  di kolom pertama diwarnai sama seperti warna aksen mesin itu di halaman Entry Data. */
 function renderMonthlyMachineTables(){
   const { currentYear, machineIds, data } = buildMonthlyMachineData();
 
@@ -3014,12 +3019,21 @@ function renderMonthlyMachineTables(){
   document.getElementById('lineStopBulanMesinTitle').textContent = `LINE STOP/BULAN/MESIN - TAHUN ${currentYear}`;
   document.getElementById('ngBulanMesinTitle').textContent = `NG IN PROSES/BULAN/MESIN - TAHUN ${currentYear}`;
 
-  const headHtml = ['<th>Mesin</th>'].concat(NAMA_BULAN_PENDEK.map(b => `<th>${b}</th>`)).join('');
-  ['tblGsphBulanMesinHead','tblStrokeBulanMesinHead','tblLineStopBulanMesinHead','tblNgBulanMesinHead'].forEach(id => {
-    document.getElementById(id).innerHTML = headHtml;
+  const gsphHeadHtml = ['<th>Mesin</th>', '<th>Target</th>']
+    .concat(NAMA_BULAN_PENDEK.map(b => `<th>${b}</th>`))
+    .concat(['<th>Rata-rata</th>', '<th>Achievement GSPH %</th>'])
+    .join('');
+  const plainHeadHtml = ['<th>Mesin</th>']
+    .concat(NAMA_BULAN_PENDEK.map(b => `<th>${b}</th>`))
+    .concat(['<th>Rata-rata</th>'])
+    .join('');
+  document.getElementById('tblGsphBulanMesinHead').innerHTML = gsphHeadHtml;
+  ['tblStrokeBulanMesinHead','tblLineStopBulanMesinHead','tblNgBulanMesinHead'].forEach(id => {
+    document.getElementById(id).innerHTML = plainHeadHtml;
   });
 
-  const emptyRow = `<tr><td colspan="13" style="text-align:center; color:var(--text-faint);">Belum ada data di tahun ${currentYear}</td></tr>`;
+  const gsphColCount = 2 + NAMA_BULAN_PENDEK.length + 2;
+  const plainColCount = 1 + NAMA_BULAN_PENDEK.length + 1;
   const adaData = machineIds.some(mId => data[mId].some(b => b.totalJamSum > 0 || b.strokeSum > 0 || b.ngSum > 0 || b.lineStopMenitSum > 0));
 
   const gsphBody = document.getElementById('tblGsphBulanMesin');
@@ -3028,50 +3042,77 @@ function renderMonthlyMachineTables(){
   const ngBody = document.getElementById('tblNgBulanMesin');
 
   if(!adaData){
-    gsphBody.innerHTML = emptyRow;
-    strokeBody.innerHTML = emptyRow;
-    lineStopBody.innerHTML = emptyRow;
-    ngBody.innerHTML = emptyRow;
+    gsphBody.innerHTML = `<tr><td colspan="${gsphColCount}" style="text-align:center; color:var(--text-faint);">Belum ada data di tahun ${currentYear}</td></tr>`;
+    const plainEmpty = `<tr><td colspan="${plainColCount}" style="text-align:center; color:var(--text-faint);">Belum ada data di tahun ${currentYear}</td></tr>`;
+    strokeBody.innerHTML = plainEmpty;
+    lineStopBody.innerHTML = plainEmpty;
+    ngBody.innerHTML = plainEmpty;
     return;
   }
 
+  const machineNameCell = mId => {
+    const m = MACHINES.find(x => x.id === mId);
+    const color = m ? m.color : 'inherit';
+    return `<td style="color:${color}; font-weight:600;">${mId}</td>`;
+  };
+
   gsphBody.innerHTML = machineIds.map(mId => {
-    const cells = data[mId].map(b => {
-      const gsph = b.totalJamSum > 0 ? Math.round(b.strokeSum / b.totalJamSum) : 0;
-      return `<td>${b.totalJamSum > 0 ? gsph : '-'}</td>`;
-    }).join('');
-    return `<tr><td>${mId}</td>${cells}</tr>`;
+    const target = (MACHINES.find(m => m.id === mId) || {}).target || 0;
+    const monthlyGsph = data[mId].map(b => b.totalJamSum > 0 ? Math.round(b.strokeSum / b.totalJamSum) : null);
+    const cells = monthlyGsph.map(v => `<td>${v === null ? '-' : v}</td>`).join('');
+    const validVals = monthlyGsph.filter(v => v !== null);
+    const rataRata = validVals.length ? Math.round(validVals.reduce((a,b) => a+b, 0) / validVals.length) : null;
+    const achievement = (rataRata !== null && target > 0) ? Math.round((rataRata / target) * 1000) / 10 : null;
+    return `<tr>${machineNameCell(mId)}<td>${target}</td>${cells}<td>${rataRata === null ? '-' : rataRata}</td><td>${achievement === null ? '-' : achievement + '%'}</td></tr>`;
   }).join('');
 
-  strokeBody.innerHTML = machineIds.map(mId => {
-    const cells = data[mId].map(b => `<td>${b.strokeSum || 0}</td>`).join('');
-    return `<tr><td>${mId}</td>${cells}</tr>`;
-  }).join('');
+  const buildPlainRow = (mId, getVal) => {
+    const buckets = data[mId];
+    const cells = buckets.map(b => `<td>${getVal(b)}</td>`).join('');
+    const activeBuckets = buckets.filter(b => b.totalJamSum > 0);
+    const sum = activeBuckets.reduce((a,b) => a + getVal(b), 0);
+    const rataRata = activeBuckets.length ? Math.round(sum / activeBuckets.length) : 0;
+    return `<tr>${machineNameCell(mId)}${cells}<td>${rataRata}</td></tr>`;
+  };
 
-  lineStopBody.innerHTML = machineIds.map(mId => {
-    const cells = data[mId].map(b => `<td>${b.lineStopMenitSum || 0}</td>`).join('');
-    return `<tr><td>${mId}</td>${cells}</tr>`;
-  }).join('');
-
-  ngBody.innerHTML = machineIds.map(mId => {
-    const cells = data[mId].map(b => `<td>${b.ngSum || 0}</td>`).join('');
-    return `<tr><td>${mId}</td>${cells}</tr>`;
-  }).join('');
+  strokeBody.innerHTML = machineIds.map(mId => buildPlainRow(mId, b => b.strokeSum || 0)).join('');
+  lineStopBody.innerHTML = machineIds.map(mId => buildPlainRow(mId, b => b.lineStopMenitSum || 0)).join('');
+  ngBody.innerHTML = machineIds.map(mId => buildPlainRow(mId, b => b.ngSum || 0)).join('');
 }
 
-/** Export salah satu dari ke-4 tabel bulanan ke CSV. metric: 'gsph' | 'stroke' | 'lineStop' | 'ng'. */
+/** Export salah satu dari ke-4 tabel bulanan ke CSV. metric: 'gsph' | 'stroke' | 'lineStop' | 'ng'.
+ *  Kolomnya mengikuti persis apa yang tampil di tabel (termasuk Target, Rata-rata, Achievement % untuk GSPH). */
 function exportMonthlyMachineCsv(metric, filenamePrefix){
   const { currentYear, machineIds, data } = buildMonthlyMachineData();
-  const cols = ['Mesin', ...NAMA_BULAN_PENDEK];
-  const rows = machineIds.map(mId => {
-    const vals = data[mId].map(b => {
-      if(metric === 'gsph') return b.totalJamSum > 0 ? Math.round(b.strokeSum / b.totalJamSum) : 0;
-      if(metric === 'stroke') return b.strokeSum || 0;
-      if(metric === 'lineStop') return b.lineStopMenitSum || 0;
-      if(metric === 'ng') return b.ngSum || 0;
-      return 0;
+
+  if(metric === 'gsph'){
+    const cols = ['Mesin', 'Target', ...NAMA_BULAN_PENDEK, 'Rata-rata', 'Achievement GSPH %'];
+    const rows = machineIds.map(mId => {
+      const target = (MACHINES.find(m => m.id === mId) || {}).target || 0;
+      const monthlyGsph = data[mId].map(b => b.totalJamSum > 0 ? Math.round(b.strokeSum / b.totalJamSum) : 0);
+      const validVals = data[mId].filter(b => b.totalJamSum > 0).map(b => Math.round(b.strokeSum / b.totalJamSum));
+      const rataRata = validVals.length ? Math.round(validVals.reduce((a,b) => a+b, 0) / validVals.length) : 0;
+      const achievement = (validVals.length && target > 0) ? Math.round((rataRata / target) * 1000) / 10 : 0;
+      return [mId, target, ...monthlyGsph, rataRata, achievement];
     });
-    return [mId, ...vals];
+    exportTableToCsv(cols, rows, `${filenamePrefix}-TAHUN-${currentYear}`, 'SemuaMesin');
+    return;
+  }
+
+  const getVal = b => {
+    if(metric === 'stroke') return b.strokeSum || 0;
+    if(metric === 'lineStop') return b.lineStopMenitSum || 0;
+    if(metric === 'ng') return b.ngSum || 0;
+    return 0;
+  };
+  const cols = ['Mesin', ...NAMA_BULAN_PENDEK, 'Rata-rata'];
+  const rows = machineIds.map(mId => {
+    const buckets = data[mId];
+    const vals = buckets.map(getVal);
+    const activeBuckets = buckets.filter(b => b.totalJamSum > 0);
+    const sum = activeBuckets.reduce((a,b) => a + getVal(b), 0);
+    const rataRata = activeBuckets.length ? Math.round(sum / activeBuckets.length) : 0;
+    return [mId, ...vals, rataRata];
   });
   exportTableToCsv(cols, rows, `${filenamePrefix}-TAHUN-${currentYear}`, 'SemuaMesin');
 }
