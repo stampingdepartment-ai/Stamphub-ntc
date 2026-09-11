@@ -831,18 +831,22 @@ input[type="time"]::-webkit-calendar-picker-indicator{
       <input type="date" id="summaryFilterTo">
       <button class="btn btn-ghost btn-sm" id="summaryFilterApplyBtn">Terapkan</button>
       <button class="btn btn-ghost btn-sm" id="summaryFilterResetBtn">Tampilkan Semua</button>
-      <button class="btn btn-ghost btn-sm" id="summaryExportCsvBtn" style="margin-left:auto;">Export CSV</button>
     </div>
     <div class="table-toolbar" style="margin-bottom:14px; font-size:13px;">
       <span style="color:var(--text-faint);">Terapkan filter tanggal ke:</span>
       <label style="display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" id="summaryFilterTargetGsph" checked> Summary GSPH</label>
-      <label style="display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" id="summaryFilterTargetStroke"> Summary Stroke</label>
-      <label style="display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" id="summaryFilterTargetNg"> Summary Total NG</label>
-      <label style="display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" id="summaryFilterTargetNgJenis"> Summary NG per Jenis</label>
+      <label style="display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" id="summaryFilterTargetProduksiItem"> Summary Produksi per Item</label>
+      <label style="display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" id="summaryFilterTargetLineStop1600TR"> Line Stop 1600TR</label>
+      <label style="display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" id="summaryFilterTargetLineStop2500TR"> Line Stop 2500TR</label>
+      <label style="display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" id="summaryFilterTargetLineStop800BP"> Line Stop 800BP</label>
+      <label style="display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" id="summaryFilterTargetLineStop300BP"> Line Stop 300BP</label>
     </div>
     <div class="grid cols-2">
       <div class="chart-card" style="grid-column:1 / -1;">
-        <h3>Summary GSPH &amp; Produksi &mdash; per Tanggal &amp; Shift <span id="gsphFilterBadge" style="font-size:11px; font-weight:400; color:var(--text-faint);"></span></h3>
+        <h3 style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+          <span>Summary GSPH &amp; Produksi &mdash; per Tanggal &amp; Shift <span id="gsphFilterBadge" style="font-size:11px; font-weight:400; color:var(--text-faint);"></span></span>
+          <button class="btn btn-ghost btn-sm" id="exportGsphCsvBtn">Export CSV</button>
+        </h3>
         <div class="table-wrap summary-table">
           <table>
             <thead><tr id="tblGsphSummaryHead"></tr></thead>
@@ -852,32 +856,67 @@ input[type="time"]::-webkit-calendar-picker-indicator{
       </div>
     </div>
     <div class="grid cols-2" style="margin-top:14px;">
-      <div class="chart-card">
-        <h3>Summary Stroke &mdash; Gabungan &amp; per Shift <span id="strokeFilterBadge" style="font-size:11px; font-weight:400; color:var(--text-faint);"></span></h3>
+      <div class="chart-card" style="grid-column:1 / -1;">
+        <h3 style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+          <span>Summary Produksi per Item <span id="produksiItemFilterBadge" style="font-size:11px; font-weight:400; color:var(--text-faint);"></span></span>
+          <button class="btn btn-ghost btn-sm" id="exportProduksiItemCsvBtn">Export CSV</button>
+        </h3>
         <div class="table-wrap summary-table">
           <table>
-            <thead><tr><th>Tgl</th><th>Gabungan</th><th>Merah</th><th>Biru</th></tr></thead>
-            <tbody id="tblStrokeSummary"><tr></tr></tbody>
-          </table>
-        </div>
-      </div>
-      <div class="chart-card">
-        <h3>Summary Total NG &mdash; per Tanggal &amp; Shift <span id="ngFilterBadge" style="font-size:11px; font-weight:400; color:var(--text-faint);"></span></h3>
-        <div class="table-wrap summary-table">
-          <table>
-            <thead><tr><th>Tgl</th><th>Gabungan</th><th>Merah</th><th>Biru</th></tr></thead>
-            <tbody id="tblNgSummary"><tr></tr></tbody>
+            <thead><tr><th>Tanggal</th><th>Shift</th><th>Part Number</th><th>Material Digunakan (pcs)</th><th>Actual Produksi (Pcs OK)</th><th>Qty Scrap NG (pcs)</th><th>Jenis NG</th><th>Rasio NG (%)</th></tr></thead>
+            <tbody id="tblProduksiItemSummary"><tr></tr></tbody>
           </table>
         </div>
       </div>
     </div>
     <div class="grid cols-2" style="margin-top:14px;">
       <div class="chart-card">
-        <h3>Summary Total NG &mdash; per Jenis Problem <span id="ngJenisFilterBadge" style="font-size:11px; font-weight:400; color:var(--text-faint);"></span></h3>
+        <h3 style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+          <span>Summary Line Stop &mdash; Mc. 1600TR <span id="lineStop1600TRFilterBadge" style="font-size:11px; font-weight:400; color:var(--text-faint);"></span></span>
+          <button class="btn btn-ghost btn-sm" id="exportLineStop1600TRCsvBtn">Export CSV</button>
+        </h3>
         <div class="table-wrap summary-table">
           <table>
-            <thead><tr><th>Jenis Problem</th><th>Total NG</th></tr></thead>
-            <tbody id="tblNgJenisSummary"><tr></tr></tbody>
+            <thead><tr><th>No.</th><th>Tanggal</th><th>Part Nomor</th><th>Shift</th><th>Total Time (menit)</th><th>Problem</th><th>Keterangan</th></tr></thead>
+            <tbody id="tblLineStop1600TR"><tr></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="chart-card">
+        <h3 style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+          <span>Summary Line Stop &mdash; Mc. 2500TR <span id="lineStop2500TRFilterBadge" style="font-size:11px; font-weight:400; color:var(--text-faint);"></span></span>
+          <button class="btn btn-ghost btn-sm" id="exportLineStop2500TRCsvBtn">Export CSV</button>
+        </h3>
+        <div class="table-wrap summary-table">
+          <table>
+            <thead><tr><th>No.</th><th>Tanggal</th><th>Part Nomor</th><th>Shift</th><th>Total Time (menit)</th><th>Problem</th><th>Keterangan</th></tr></thead>
+            <tbody id="tblLineStop2500TR"><tr></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="grid cols-2" style="margin-top:14px;">
+      <div class="chart-card">
+        <h3 style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+          <span>Summary Line Stop &mdash; Mc. 800BP <span id="lineStop800BPFilterBadge" style="font-size:11px; font-weight:400; color:var(--text-faint);"></span></span>
+          <button class="btn btn-ghost btn-sm" id="exportLineStop800BPCsvBtn">Export CSV</button>
+        </h3>
+        <div class="table-wrap summary-table">
+          <table>
+            <thead><tr><th>No.</th><th>Tanggal</th><th>Part Nomor</th><th>Shift</th><th>Total Time (menit)</th><th>Problem</th><th>Keterangan</th></tr></thead>
+            <tbody id="tblLineStop800BP"><tr></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="chart-card">
+        <h3 style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+          <span>Summary Line Stop &mdash; Mc. 300BP <span id="lineStop300BPFilterBadge" style="font-size:11px; font-weight:400; color:var(--text-faint);"></span></span>
+          <button class="btn btn-ghost btn-sm" id="exportLineStop300BPCsvBtn">Export CSV</button>
+        </h3>
+        <div class="table-wrap summary-table">
+          <table>
+            <thead><tr><th>No.</th><th>Tanggal</th><th>Part Nomor</th><th>Shift</th><th>Total Time (menit)</th><th>Problem</th><th>Keterangan</th></tr></thead>
+            <tbody id="tblLineStop300BP"><tr></tr></tbody>
           </table>
         </div>
       </div>
@@ -907,7 +946,7 @@ let state = {
   problemCount: 0,
   summaryFilter: {
     from: '', to: '',
-    targets: { gsph: true, stroke: false, ng: false, ngJenis: false },
+    targets: { gsph: true, produksiItem: false, lineStop1600TR: false, lineStop2500TR: false, lineStop800BP: false, lineStop300BP: false },
   },
 };
 
@@ -2084,23 +2123,36 @@ document.getElementById('summaryFilterResetBtn').addEventListener('click', () =>
 });
 [
   ['summaryFilterTargetGsph', 'gsph'],
-  ['summaryFilterTargetStroke', 'stroke'],
-  ['summaryFilterTargetNg', 'ng'],
-  ['summaryFilterTargetNgJenis', 'ngJenis'],
+  ['summaryFilterTargetProduksiItem', 'produksiItem'],
+  ['summaryFilterTargetLineStop1600TR', 'lineStop1600TR'],
+  ['summaryFilterTargetLineStop2500TR', 'lineStop2500TR'],
+  ['summaryFilterTargetLineStop800BP', 'lineStop800BP'],
+  ['summaryFilterTargetLineStop300BP', 'lineStop300BP'],
 ].forEach(([elId, key]) => {
   document.getElementById(elId).addEventListener('change', (ev) => {
     state.summaryFilter.targets[key] = ev.target.checked;
     renderSummary();
   });
 });
-document.getElementById('summaryExportCsvBtn').addEventListener('click', () => {
-  const filterFrom = state.summaryFilter.from;
-  const filterTo = state.summaryFilter.to;
-  let entries = getEntries(state.machine).slice().sort((a,b)=> a.tanggal.localeCompare(b.tanggal));
-  if(filterFrom) entries = entries.filter(e => e.tanggal >= filterFrom);
-  if(filterTo) entries = entries.filter(e => e.tanggal <= filterTo);
-  const rangeLabel = (filterFrom || filterTo) ? `${filterFrom || 'awal'}_sd_${filterTo || 'akhir'}` : 'semua-data';
-  exportEntriesToCsv(entries, `ringkasan-${rangeLabel}`);
+
+/* ---- Export CSV per tabel: formatnya persis sama seperti kolom yang tampil di tabel
+   masing-masing (bukan data mentah). Baca LANGSUNG tanggal & checkbox saat diklik lewat
+   exportSummaryTableLive(), jadi selalu akurat walau belum klik "Terapkan" dulu. ---- */
+document.getElementById('exportGsphCsvBtn').addEventListener('click', () => {
+  exportSummaryTableLive('summaryFilterTargetGsph', buildGsphTableData, 'summary-gsph');
+});
+document.getElementById('exportProduksiItemCsvBtn').addEventListener('click', () => {
+  exportSummaryTableLive('summaryFilterTargetProduksiItem', buildProduksiItemTableData, 'summary-produksi-per-item');
+});
+[
+  ['1600TR', 'summaryFilterTargetLineStop1600TR', 'exportLineStop1600TRCsvBtn'],
+  ['2500TR', 'summaryFilterTargetLineStop2500TR', 'exportLineStop2500TRCsvBtn'],
+  ['800BP', 'summaryFilterTargetLineStop800BP', 'exportLineStop800BPCsvBtn'],
+  ['300BP', 'summaryFilterTargetLineStop300BP', 'exportLineStop300BPCsvBtn'],
+].forEach(([machineId, checkboxId, btnId]) => {
+  document.getElementById(btnId).addEventListener('click', () => {
+    exportLineStopTableLive(machineId, checkboxId, `summary-line-stop-${machineId}`);
+  });
 });
 
 /* ============================================================
@@ -2499,6 +2551,22 @@ function fmtTglDDMMYY(d){
   return `${parts[2]}/${parts[1]}/${parts[0].slice(2)}`;
 }
 
+/** Export generik: cocok untuk data tabel apa saja (array kolom + array baris nilai). */
+function exportTableToCsv(cols, rows, filenamePrefix, machineLabel){
+  if(!rows || rows.length === 0){ toast('Tidak ada data untuk diexport'); return; }
+  const csv = [cols, ...rows].map(r =>
+    r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')
+  ).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${filenamePrefix}-${machineLabel || state.machine}-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('CSV diexport');
+}
+
 /** Hitung agregasi (per hari, per shift, per jenis scrap) dari sekumpulan entries.
  *  Dipisah dari renderSummary() supaya bisa dipanggil 2x: sekali untuk "semua data",
  *  sekali lagi untuk "data sesuai filter tanggal" — lalu tiap tabel tinggal pilih pakai yang mana. */
@@ -2527,11 +2595,140 @@ function aggregateEntries(entries){
   });
   const days = Object.keys(byDay).sort();
 
-  const scrapMap = {};
-  entries.forEach(e => { if(e.jenisScrap){ scrapMap[e.jenisScrap] = (scrapMap[e.jenisScrap]||0) + e.qtyNg; } });
-  const scrapSorted = Object.entries(scrapMap).filter(([,v]) => v > 0).sort((a,b)=> b[1]-a[1]);
+  // Agregasi per Tanggal + Shift + Part Number, untuk tabel "Summary Produksi per Item".
+  const partMap = {};
+  entries.forEach(e => {
+    const partKey = e.part || '(Tanpa Part Number)';
+    const shiftKey = e.shift === 'BLUE' ? 'BLUE' : 'RED';
+    const key = e.tanggal + '||' + shiftKey + '||' + partKey;
+    if(!partMap[key]) partMap[key] = { tanggal: e.tanggal, shift: shiftKey, part: partKey, materialSum:0, pcsokSum:0, qtyNgSum:0, jenisSet: new Set() };
+    const p = partMap[key];
+    p.materialSum += e.material || 0;
+    p.pcsokSum += e.pcsok || 0;
+    p.qtyNgSum += e.qtyNg || 0;
+    if(e.jenisScrap) p.jenisSet.add(e.jenisScrap);
+  });
+  const byPart = Object.values(partMap)
+    .map(p => ({
+      tanggal: p.tanggal,
+      shift: p.shift,
+      part: p.part,
+      materialSum: p.materialSum,
+      pcsokSum: p.pcsokSum,
+      qtyNgSum: p.qtyNgSum,
+      jenisNg: Array.from(p.jenisSet).join(', '),
+      rasioNg: (p.pcsokSum + p.qtyNgSum) > 0 ? Math.round((p.qtyNgSum / (p.pcsokSum + p.qtyNgSum)) * 1000) / 10 : 0,
+    }))
+    .sort((a,b)=> a.tanggal.localeCompare(b.tanggal) || a.shift.localeCompare(b.shift) || a.part.localeCompare(b.part));
 
-  return { days, byDay, scrapSorted };
+  return { days, byDay, byPart };
+}
+
+/** Builder cols+rows untuk tiap tabel Summary, dipisah dari renderSummaryTables() supaya
+ *  bisa dipanggil independen saat export CSV (tanpa bergantung data render terakhir di layar). */
+function buildGsphTableData(agg){
+  const ratio = (num, den) => den > 0 ? Math.round(num/den) : 0;
+  const jam1 = v => Math.round((v || 0) * 10) / 10;
+  const cats = getProblemCategories();
+  const catLabel = { Machine:'Mesin', Dies:'Dies', Finger:'Finger', Misgrip:'Misgrip', Material:'Material', Others:'Others' };
+  const cols = ['Tgl','Shift','GSPH/Shift','GSPH/Hari (Gab.)','Actual Stroke','Stroke/Hari (Gab.)','Total Jam Produksi','Frek. Dandori','Waktu Dandori (menit)','SPM'];
+  cats.forEach(c => cols.push(`Stop ${catLabel[c]||c} (jam)`));
+  cols.push('Total Stop Time (jam)');
+
+  const rows = [];
+  const rowMeta = []; // { isFirstOfDay, daySpan } — dipakai untuk rowspan di tabel HTML
+  agg.days.forEach(d => {
+    const day = fmtTglDDMMYY(d);
+    const dayObj = agg.byDay[d];
+    const gsphDay = ratio(dayObj.strokeSum, dayObj.totalJamSum);
+    const shiftsPresent = ['RED','BLUE'].filter(sh => dayObj.byShift[sh] && dayObj.byShift[sh].dandoriFreq > 0);
+    shiftsPresent.forEach((sh, idx) => {
+      const s = dayObj.byShift[sh];
+      const gsphShift = ratio(s.strokeSum, s.totalJamSum);
+      const spmAvg = s.spmCount ? Math.round(s.spmSum / s.spmCount) : 0;
+      let totalStopMenit = 0;
+      const stopVals = cats.map(c => {
+        const menit = (s.stopCat && s.stopCat[c]) || 0;
+        totalStopMenit += menit;
+        return jam1(menit/60);
+      });
+      rows.push([day, sh === 'RED' ? 'Merah' : 'Biru', gsphShift, gsphDay, s.strokeSum, dayObj.strokeSum, jam1(s.totalJamSum), s.dandoriFreq, s.dandoriMenitSum, spmAvg, ...stopVals, jam1(totalStopMenit/60)]);
+      rowMeta.push({ isFirstOfDay: idx === 0, daySpan: shiftsPresent.length });
+    });
+  });
+  return { cols, rows, rowMeta };
+}
+
+function buildProduksiItemTableData(agg){
+  const cols = ['Tanggal','Shift','Part Number','Material Digunakan (pcs)','Actual Produksi (Pcs OK)','Qty Scrap NG (pcs)','Jenis NG','Rasio NG (%)'];
+  const rows = agg.byPart.map(p => [fmtTglDDMMYY(p.tanggal), p.shift === 'BLUE' ? 'Biru' : 'Merah', p.part, p.materialSum, p.pcsokSum, p.qtyNgSum, p.jenisNg || '-', p.rasioNg]);
+  return { cols, rows };
+}
+
+/** Builder tabel Line Stop per mesin: setiap baris = 1 kejadian problem (bukan agregat),
+ *  diambil dari field entries[].problems[]. "entries" di sini SUDAH milik 1 mesin spesifik
+ *  (dari getEntries(machineId)), bukan agregat lintas mesin. */
+const LINE_STOP_CATEGORY_LABEL = { Machine:'Mesin', Dies:'Dies', Finger:'Finger', Misgrip:'Misgrip', Material:'Material', Others:'Others' };
+function buildLineStopTableData(entries){
+  const cols = ['No.','Tanggal','Part Nomor','Shift','Total Time (menit)','Problem','Keterangan'];
+  const rows = [];
+  entries.forEach(e => {
+    (e.problems||[]).forEach(p => {
+      if(!p.menit) return; // lewati kejadian tanpa durasi (0 menit / belum diisi)
+      rows.push([
+        e.tanggal, // dipakai untuk sorting, dibuang setelah di-nomori
+        fmtTglDDMMYY(e.tanggal),
+        e.part || '-',
+        e.shift === 'BLUE' ? 'Biru' : 'Merah',
+        p.menit,
+        p.keterangan || '-',
+        LINE_STOP_CATEGORY_LABEL[p.kategori] || p.kategori || '-',
+      ]);
+    });
+  });
+  rows.sort((a,b)=> a[0].localeCompare(b[0]));
+  return { cols, rows: rows.map((r,i) => [i+1, r[1], r[2], r[3], r[4], r[5], r[6]]) };
+}
+
+/** Export CSV per tabel Summary, MEMBACA LANGSUNG tanggal & checkbox saat tombol diklik —
+ *  jadi selalu akurat walau belum sempat klik "Terapkan" / tabelnya belum di-render ulang. */
+function exportSummaryTableLive(checkboxId, buildFn, filenamePrefix){
+  const filterFrom = document.getElementById('summaryFilterFrom').value || '';
+  const filterTo = document.getElementById('summaryFilterTo').value || '';
+  const checkbox = document.getElementById(checkboxId);
+  const hasFilter = !!(filterFrom || filterTo);
+  const applyFilter = !!(checkbox && checkbox.checked && hasFilter);
+
+  const allEntries = getEntries(state.machine).slice().sort((a,b)=> a.tanggal.localeCompare(b.tanggal));
+  let entries = allEntries;
+  if(applyFilter){
+    if(filterFrom) entries = entries.filter(e => e.tanggal >= filterFrom);
+    if(filterTo) entries = entries.filter(e => e.tanggal <= filterTo);
+  }
+  const agg = aggregateEntries(entries);
+  const { cols, rows } = buildFn(agg);
+  const rangeLabel = applyFilter ? `${filterFrom || 'awal'}_sd_${filterTo || 'akhir'}` : 'semua-data';
+  exportTableToCsv(cols, rows, `${filenamePrefix}-${rangeLabel}`);
+}
+
+/** Sama seperti exportSummaryTableLive(), tapi khusus tabel Line Stop per mesin: entries-nya
+ *  diambil langsung dari machineId yang dipilih (bukan state.machine yang sedang aktif di sidebar),
+ *  karena ke-4 tabel line stop ini memang selalu menampilkan ke-4 mesin sekaligus. */
+function exportLineStopTableLive(machineId, checkboxId, filenamePrefix){
+  const filterFrom = document.getElementById('summaryFilterFrom').value || '';
+  const filterTo = document.getElementById('summaryFilterTo').value || '';
+  const checkbox = document.getElementById(checkboxId);
+  const hasFilter = !!(filterFrom || filterTo);
+  const applyFilter = !!(checkbox && checkbox.checked && hasFilter);
+
+  let entries = getEntries(machineId).slice().sort((a,b)=> a.tanggal.localeCompare(b.tanggal));
+  if(applyFilter){
+    if(filterFrom) entries = entries.filter(e => e.tanggal >= filterFrom);
+    if(filterTo) entries = entries.filter(e => e.tanggal <= filterTo);
+  }
+  const { cols, rows } = buildLineStopTableData(entries);
+  const rangeLabel = applyFilter ? `${filterFrom || 'awal'}_sd_${filterTo || 'akhir'}` : 'semua-data';
+  exportTableToCsv(cols, rows, `${filenamePrefix}-${rangeLabel}`, machineId);
 }
 
 /** View Summary punya section HTML sendiri, jadi hitung ulang agregasinya secara mandiri
@@ -2552,89 +2749,79 @@ function renderSummary(){
   const aggAll = aggregateEntries(allEntries);
   const aggFiltered = hasFilter ? aggregateEntries(filteredEntries) : aggAll;
 
+  const lineStopMachineIds = ['1600TR','2500TR','800BP','300BP'];
+  const lineStopEntries = {};
+  const lineStopIsFiltered = {};
+  lineStopMachineIds.forEach(mId => {
+    const key = 'lineStop' + mId;
+    let mEntries = getEntries(mId).slice().sort((a,b)=> a.tanggal.localeCompare(b.tanggal));
+    const useFilter = targets[key] && hasFilter;
+    if(useFilter){
+      if(filterFrom) mEntries = mEntries.filter(e => e.tanggal >= filterFrom);
+      if(filterTo) mEntries = mEntries.filter(e => e.tanggal <= filterTo);
+    }
+    lineStopEntries[mId] = mEntries;
+    lineStopIsFiltered[mId] = useFilter;
+  });
+
   renderSummaryTables({
     gsph: (targets.gsph && hasFilter) ? aggFiltered : aggAll,
-    stroke: (targets.stroke && hasFilter) ? aggFiltered : aggAll,
-    ng: (targets.ng && hasFilter) ? aggFiltered : aggAll,
-    ngJenis: (targets.ngJenis && hasFilter) ? aggFiltered : aggAll,
+    produksiItem: (targets.produksiItem && hasFilter) ? aggFiltered : aggAll,
+    lineStop: lineStopEntries,
   }, {
     gsph: targets.gsph && hasFilter,
-    stroke: targets.stroke && hasFilter,
-    ng: targets.ng && hasFilter,
-    ngJenis: targets.ngJenis && hasFilter,
+    produksiItem: targets.produksiItem && hasFilter,
+    lineStop: lineStopIsFiltered,
   }, filterFrom, filterTo);
 }
 
 function renderSummaryTables(data, isFiltered, filterFrom, filterTo){
-  const rangeLabel = `${fmtTglDDMMYY(filterFrom) || 'awal'} s/d ${fmtTglDDMMYY(filterTo) || 'akhir'}`;
+  const rangeLabelText = `${fmtTglDDMMYY(filterFrom) || 'awal'} s/d ${fmtTglDDMMYY(filterTo) || 'akhir'}`;
   const setBadge = (id, filtered) => {
     const el = document.getElementById(id);
-    if(el) el.textContent = filtered ? `(${rangeLabel})` : '(Semua Data)';
+    if(el) el.textContent = filtered ? `(${rangeLabelText})` : '(Semua Data)';
   };
   setBadge('gsphFilterBadge', isFiltered.gsph);
-  setBadge('strokeFilterBadge', isFiltered.stroke);
-  setBadge('ngFilterBadge', isFiltered.ng);
-  setBadge('ngJenisFilterBadge', isFiltered.ngJenis);
+  setBadge('produksiItemFilterBadge', isFiltered.produksiItem);
 
   const gsphHead = document.getElementById('tblGsphSummaryHead');
   const gsphBody = document.getElementById('tblGsphSummary');
-  const strokeBody = document.getElementById('tblStrokeSummary');
-  const ngBody = document.getElementById('tblNgSummary');
-  const ngJenisBody = document.getElementById('tblNgJenisSummary');
-  const ratio = (num, den) => den > 0 ? Math.round(num/den) : 0;
-  const jam1 = v => Math.round((v || 0) * 10) / 10;
-  const formatTglDDMMYY = fmtTglDDMMYY;
+  const produksiItemBody = document.getElementById('tblProduksiItemSummary');
   const emptyRow = colspan => `<tr><td colspan="${colspan}" style="text-align:center; color:var(--text-faint);">Belum ada data pada rentang ini</td></tr>`;
 
-  // Kategori stop time menyesuaikan mesin aktif (300BP/800BP tidak punya kategori Finger)
-  const cats = getProblemCategories();
-  const catLabel = { Machine:'Mesin', Dies:'Dies', Finger:'Finger', Misgrip:'Misgrip', Material:'Material', Others:'Others' };
-  const gsphCols = ['Tgl','Shift','GSPH/Shift','GSPH/Hari (Gab.)','Actual Stroke','Stroke/Hari (Gab.)','Total Jam Produksi','Frek. Dandori','Waktu Dandori (menit)','SPM'];
-  cats.forEach(c => gsphCols.push(`Stop ${catLabel[c]||c} (jam)`));
-  gsphCols.push('Total Stop Time (jam)');
+  const { cols: gsphCols, rows: gsphRows, rowMeta: gsphRowMeta } = buildGsphTableData(data.gsph);
   if(gsphHead) gsphHead.innerHTML = gsphCols.map(c => `<th>${c}</th>`).join('');
-  const gsphColCount = gsphCols.length;
-
-  const gsphDays = data.gsph.days, gsphByDay = data.gsph.byDay;
   if(gsphBody){
-    const rows = [];
-    gsphDays.forEach(d => {
-      const day = formatTglDDMMYY(d);
-      const dayObj = gsphByDay[d];
-      const gsphDay = ratio(dayObj.strokeSum, dayObj.totalJamSum);
-      ['RED','BLUE'].forEach(sh => {
-        const s = dayObj.byShift[sh];
-        if(!s || s.dandoriFreq === 0) return; // lewati shift yang tidak ada entri di hari itu
-        const gsphShift = ratio(s.strokeSum, s.totalJamSum);
-        const spmAvg = s.spmCount ? Math.round(s.spmSum / s.spmCount) : 0;
-        let totalStopMenit = 0;
-        const stopCells = cats.map(c => {
-          const menit = (s.stopCat && s.stopCat[c]) || 0;
-          totalStopMenit += menit;
-          return `<td>${jam1(menit/60)}</td>`;
-        }).join('');
-        rows.push(`<tr><td>${day}</td><td>${sh === 'RED' ? 'Merah' : 'Biru'}</td><td>${gsphShift}</td><td>${gsphDay}</td><td>${s.strokeSum}</td><td>${dayObj.strokeSum}</td><td>${jam1(s.totalJamSum)}</td><td>${s.dandoriFreq}</td><td>${s.dandoriMenitSum}</td><td>${spmAvg}</td>${stopCells}<td>${jam1(totalStopMenit/60)}</td></tr>`);
-      });
-    });
-    gsphBody.innerHTML = rows.length ? rows.join('') : emptyRow(gsphColCount);
+    const GSPH_HARI_COL = 3; // index kolom "GSPH/Hari (Gab.)" di gsphCols/gsphRows
+    gsphBody.innerHTML = gsphRows.length
+      ? gsphRows.map((r, i) => {
+          const meta = gsphRowMeta[i];
+          const cells = r.map((v, colIdx) => {
+            if(colIdx === GSPH_HARI_COL){
+              if(!meta.isFirstOfDay) return ''; // baris lanjutan hari yang sama: sel ini dilewati (sudah kena rowspan)
+              return `<td rowspan="${meta.daySpan}" style="text-align:center; vertical-align:middle;">${v}</td>`;
+            }
+            return `<td>${v}</td>`;
+          }).join('');
+          return `<tr>${cells}</tr>`;
+        }).join('')
+      : emptyRow(gsphCols.length);
   }
 
-  const strokeDays = data.stroke.days, strokeByDay = data.stroke.byDay;
-  strokeBody.innerHTML = strokeDays.length ? strokeDays.map(d => {
-    const day = formatTglDDMMYY(d);
-    return `<tr><td>${day}</td><td>${strokeByDay[d].strokeSum}</td><td>${strokeByDay[d].byShift.RED.strokeSum}</td><td>${strokeByDay[d].byShift.BLUE.strokeSum}</td></tr>`;
-  }).join('') : emptyRow(4);
+  const { rows: produksiItemRows } = buildProduksiItemTableData(data.produksiItem);
+  produksiItemBody.innerHTML = produksiItemRows.length
+    ? produksiItemRows.map(r => `<tr><td>${r[0]}</td><td>${escapeHtml(String(r[1]))}</td><td>${escapeHtml(String(r[2]))}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td>${escapeHtml(String(r[6]))}</td><td>${r[7]}%</td></tr>`).join('')
+    : emptyRow(8);
 
-  const ngDays = data.ng.days, ngByDay = data.ng.byDay;
-  ngBody.innerHTML = ngDays.length ? ngDays.map(d => {
-    const day = formatTglDDMMYY(d);
-    return `<tr><td>${day}</td><td>${ngByDay[d].ngSum}</td><td>${ngByDay[d].byShift.RED.ngSum}</td><td>${ngByDay[d].byShift.BLUE.ngSum}</td></tr>`;
-  }).join('') : emptyRow(4);
-
-  const ngJenisSorted = data.ngJenis.scrapSorted;
-  ngJenisBody.innerHTML = ngJenisSorted.length
-    ? ngJenisSorted.map(([jenis,val]) => `<tr><td>${escapeHtml(jenis)}</td><td>${val}</td></tr>`).join('')
-    : emptyRow(2);
+  ['1600TR','2500TR','800BP','300BP'].forEach(mId => {
+    setBadge(`lineStop${mId}FilterBadge`, isFiltered.lineStop[mId]);
+    const body = document.getElementById(`tblLineStop${mId}`);
+    if(!body) return;
+    const { rows } = buildLineStopTableData(data.lineStop[mId]);
+    body.innerHTML = rows.length
+      ? rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${escapeHtml(String(r[2]))}</td><td>${r[3]}</td><td>${r[4]}</td><td>${escapeHtml(String(r[5]))}</td><td>${escapeHtml(String(r[6]))}</td></tr>`).join('')
+      : emptyRow(7);
+  });
 }
 
 /* ============================================================
