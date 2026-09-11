@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" translate="no">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Stamphub-Ntc — Laporan Produksi Stamping</title>
+<meta name="google" content="notranslate">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#14b8a6">
@@ -314,6 +315,10 @@ input[type="time"]::-webkit-calendar-picker-indicator{
   .table-wrap{ overflow-x:auto; border:1px solid var(--border); border-radius: var(--radius); }
   .table-wrap.summary-table{ max-height:320px; overflow-y:auto; }
   .table-wrap.summary-table table{ min-width:0; }
+  .table-wrap.summary-table td,
+  .table-wrap.summary-table th{ border-right:1px solid var(--border); }
+  .table-wrap.summary-table tr td:last-child,
+  .table-wrap.summary-table tr th:last-child{ border-right:none; }
   table{ width:100%; border-collapse: collapse; font-size: 13px; min-width: 900px; }
   thead th{
     text-align:left; padding: 10px 12px; background: var(--panel-2);
@@ -328,6 +333,55 @@ input[type="time"]::-webkit-calendar-picker-indicator{
   .badge-warn{ background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
   .badge-bad{ background: color-mix(in srgb, var(--danger) 18%, transparent); color: var(--danger); }
   .empty-state{ text-align:center; padding: 50px 20px; color: var(--text-faint); }
+
+  /* ---------- Tabel Bulanan per Mesin (GSPH/Stroke/LineStop/NG) ---------- */
+  .monthly-machine-table table{ min-width:0; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+  .monthly-machine-table thead th{
+    background: linear-gradient(180deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 75%, black) 100%);
+    color: var(--accent-ink); text-transform:none; font-size:12px; font-weight:700;
+    text-align:center; border-right:1px solid rgba(0,0,0,0.15); border-bottom:none;
+  }
+  .monthly-machine-table thead th:first-child{ text-align:left; }
+  .monthly-machine-table tbody td{
+    text-align:center; border-right:1px solid var(--border); font-variant-numeric: tabular-nums;
+  }
+  .monthly-machine-table tbody td:first-child{
+    text-align:left; font-weight:800; color:var(--accent); background: var(--panel-2);
+  }
+  .monthly-machine-table tbody td:last-child{ border-right:none; }
+  .monthly-machine-table tbody tr:nth-child(even){ background: rgba(255,255,255,0.02); }
+  .monthly-machine-table tbody tr:hover{ background: color-mix(in srgb, var(--accent) 10%, transparent); }
+
+  /* ---------- Filter toolbar Summary (rapi jadi card + pill checkbox) ---------- */
+  .summary-filter-card{
+    background: var(--panel-2); border:1px solid var(--border); border-radius:10px;
+    padding:14px 16px; margin-bottom:16px;
+  }
+  .summary-filter-daterow{
+    display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap; margin-bottom:12px;
+  }
+  .summary-filter-daterow .field-group{ display:flex; flex-direction:column; gap:4px; }
+  .summary-filter-daterow label{ font-size:12px; color:var(--text-faint); }
+  .summary-filter-daterow input[type=date]{ width:auto; min-width:150px; }
+  .summary-filter-daterow .field-buttons{ display:flex; gap:8px; }
+  .summary-filter-targetlabel{
+    font-size:12px; color:var(--text-faint); margin-bottom:4px; display:block; font-weight:600;
+    text-transform:uppercase; letter-spacing:.4px;
+  }
+  .summary-filter-pills{ display:flex; gap:8px; flex-wrap:wrap; }
+  .summary-filter-divider{ width:1px; align-self:stretch; background:var(--border); margin:0 2px; }
+  @media (max-width:820px){ .summary-filter-divider{ display:none; } }
+  .summary-filter-pill{
+    display:flex; align-items:center; gap:6px; cursor:pointer; user-select:none;
+    background: var(--panel); border:1px solid var(--border); border-radius:999px;
+    padding:6px 12px; font-size:12.5px; color: var(--text-faint); transition: all .15s ease;
+  }
+  .summary-filter-pill:hover{ border-color: var(--accent); color: var(--text); }
+  .summary-filter-pill input[type=checkbox]{ accent-color: var(--accent); margin:0; cursor:pointer; }
+  .summary-filter-pill:has(input:checked){
+    background: color-mix(in srgb, var(--accent) 16%, var(--panel));
+    border-color: var(--accent); color: var(--text); font-weight:600;
+  }
   .empty-state .big{ font-size: 34px; margin-bottom:8px; }
 
   /* ---------- Dashboard ---------- */
@@ -750,7 +804,14 @@ input[type="time"]::-webkit-calendar-picker-indicator{
   <!-- ============ RIWAYAT VIEW ============ -->
   <section class="view" id="view-riwayat">
     <div class="table-toolbar">
-      <input type="date" id="filterDate">
+      <div class="field-group">
+        <label style="font-size:12px; color:var(--text-faint);">Dari</label>
+        <input type="date" id="filterDateFrom">
+      </div>
+      <div class="field-group">
+        <label style="font-size:12px; color:var(--text-faint);">Sampai</label>
+        <input type="date" id="filterDateTo">
+      </div>
       <button class="btn btn-ghost btn-sm" id="clearFilterBtn">Tampilkan Semua</button>
       <button class="btn btn-ghost btn-sm" id="exportCsvBtn" style="margin-left:auto;">Export CSV</button>
     </div>
@@ -824,22 +885,33 @@ input[type="time"]::-webkit-calendar-picker-indicator{
   <!-- ============ SUMMARY VIEW ============ -->
   <section class="view" id="view-summary">
     <h2 class="section-title">Ringkasan (Tabel)</h2>
-    <div class="table-toolbar" style="margin-bottom:6px;">
-      <label style="font-size:12px; color:var(--text-faint);">Dari</label>
-      <input type="date" id="summaryFilterFrom">
-      <label style="font-size:12px; color:var(--text-faint);">Sampai</label>
-      <input type="date" id="summaryFilterTo">
-      <button class="btn btn-ghost btn-sm" id="summaryFilterApplyBtn">Terapkan</button>
-      <button class="btn btn-ghost btn-sm" id="summaryFilterResetBtn">Tampilkan Semua</button>
-    </div>
-    <div class="table-toolbar" style="margin-bottom:14px; font-size:13px;">
-      <span style="color:var(--text-faint);">Terapkan filter tanggal ke:</span>
-      <label style="display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" id="summaryFilterTargetGsph" checked> Summary GSPH</label>
-      <label style="display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" id="summaryFilterTargetProduksiItem"> Summary Produksi per Item</label>
-      <label style="display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" id="summaryFilterTargetLineStop1600TR"> Line Stop 1600TR</label>
-      <label style="display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" id="summaryFilterTargetLineStop2500TR"> Line Stop 2500TR</label>
-      <label style="display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" id="summaryFilterTargetLineStop800BP"> Line Stop 800BP</label>
-      <label style="display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" id="summaryFilterTargetLineStop300BP"> Line Stop 300BP</label>
+    <div class="summary-filter-card">
+      <div class="summary-filter-daterow">
+        <div class="field-group">
+          <label>Dari</label>
+          <input type="date" id="summaryFilterFrom">
+        </div>
+        <div class="field-group">
+          <label>Sampai</label>
+          <input type="date" id="summaryFilterTo">
+        </div>
+        <div class="field-buttons">
+          <button class="btn btn-ghost btn-sm" id="summaryFilterApplyBtn">Terapkan</button>
+          <button class="btn btn-ghost btn-sm" id="summaryFilterResetBtn">Tampilkan Semua</button>
+        </div>
+        <div class="summary-filter-divider"></div>
+        <div class="field-group">
+          <span class="summary-filter-targetlabel">Terapkan filter tanggal ke:</span>
+          <div class="summary-filter-pills">
+            <label class="summary-filter-pill"><input type="checkbox" id="summaryFilterTargetGsph" checked> Summary GSPH</label>
+            <label class="summary-filter-pill"><input type="checkbox" id="summaryFilterTargetProduksiItem"> Summary Produksi per Item</label>
+            <label class="summary-filter-pill"><input type="checkbox" id="summaryFilterTargetLineStop1600TR"> Line Stop 1600TR</label>
+            <label class="summary-filter-pill"><input type="checkbox" id="summaryFilterTargetLineStop2500TR"> Line Stop 2500TR</label>
+            <label class="summary-filter-pill"><input type="checkbox" id="summaryFilterTargetLineStop800BP"> Line Stop 800BP</label>
+            <label class="summary-filter-pill"><input type="checkbox" id="summaryFilterTargetLineStop300BP"> Line Stop 300BP</label>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="grid cols-2">
       <div class="chart-card" style="grid-column:1 / -1;">
@@ -917,6 +989,66 @@ input[type="time"]::-webkit-calendar-picker-indicator{
           <table>
             <thead><tr><th>No.</th><th>Tanggal</th><th>Part Nomor</th><th>Shift</th><th>Total Time (menit)</th><th>Problem</th><th>Keterangan</th></tr></thead>
             <tbody id="tblLineStop300BP"><tr></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid cols-2" style="margin-top:14px;">
+      <div class="chart-card" style="grid-column:1 / -1;">
+        <h3 style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+          <span id="gsphBulanMesinTitle">GSPH/BULAN/MESIN - TAHUN 2026</span>
+          <button class="btn btn-ghost btn-sm" id="exportGsphBulanMesinCsvBtn">Export CSV</button>
+        </h3>
+        <div class="table-wrap summary-table monthly-machine-table notranslate" translate="no">
+          <table>
+            <thead><tr id="tblGsphBulanMesinHead"></tr></thead>
+            <tbody id="tblGsphBulanMesin"><tr></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid cols-2" style="margin-top:14px;">
+      <div class="chart-card" style="grid-column:1 / -1;">
+        <h3 style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+          <span id="strokeBulanMesinTitle">STROKE/BULAN/MESIN - TAHUN 2026</span>
+          <button class="btn btn-ghost btn-sm" id="exportStrokeBulanMesinCsvBtn">Export CSV</button>
+        </h3>
+        <div class="table-wrap summary-table monthly-machine-table notranslate" translate="no">
+          <table>
+            <thead><tr id="tblStrokeBulanMesinHead"></tr></thead>
+            <tbody id="tblStrokeBulanMesin"><tr></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid cols-2" style="margin-top:14px;">
+      <div class="chart-card" style="grid-column:1 / -1;">
+        <h3 style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+          <span id="lineStopBulanMesinTitle">LINE STOP/BULAN/MESIN - TAHUN 2026</span>
+          <button class="btn btn-ghost btn-sm" id="exportLineStopBulanMesinCsvBtn">Export CSV</button>
+        </h3>
+        <div class="table-wrap summary-table monthly-machine-table notranslate" translate="no">
+          <table>
+            <thead><tr id="tblLineStopBulanMesinHead"></tr></thead>
+            <tbody id="tblLineStopBulanMesin"><tr></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid cols-2" style="margin-top:14px;">
+      <div class="chart-card" style="grid-column:1 / -1;">
+        <h3 style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+          <span id="ngBulanMesinTitle">NG IN PROSES/BULAN/MESIN - TAHUN 2026</span>
+          <button class="btn btn-ghost btn-sm" id="exportNgBulanMesinCsvBtn">Export CSV</button>
+        </h3>
+        <div class="table-wrap summary-table monthly-machine-table notranslate" translate="no">
+          <table>
+            <thead><tr id="tblNgBulanMesinHead"></tr></thead>
+            <tbody id="tblNgBulanMesin"><tr></tr></tbody>
           </table>
         </div>
       </div>
@@ -1889,14 +2021,21 @@ jenisScrap: document.getElementById('f_jenisscrap').value.trim(),
 /* ============================================================
    RIWAYAT VIEW
 ============================================================ */
-let filterDate = null;
-document.getElementById('filterDate').addEventListener('change', (e) => {
-  filterDate = e.target.value || null;
+let filterDateFrom = null;
+let filterDateTo = null;
+document.getElementById('filterDateFrom').addEventListener('change', (e) => {
+  filterDateFrom = e.target.value || null;
+  renderRiwayat();
+});
+document.getElementById('filterDateTo').addEventListener('change', (e) => {
+  filterDateTo = e.target.value || null;
   renderRiwayat();
 });
 document.getElementById('clearFilterBtn').addEventListener('click', () => {
-  filterDate = null;
-  document.getElementById('filterDate').value = '';
+  filterDateFrom = null;
+  filterDateTo = null;
+  document.getElementById('filterDateFrom').value = '';
+  document.getElementById('filterDateTo').value = '';
   renderRiwayat();
 });
 // TARUH FUNGSI BARU ANDA DI SINI
@@ -1946,7 +2085,8 @@ function renderRiwayatHeader(){
 
 function renderRiwayat(){
   let entries = getEntries(state.machine).slice().sort((a,b)=> b.tanggal.localeCompare(a.tanggal));
-  if(filterDate) entries = entries.filter(e => e.tanggal === filterDate);
+  if(filterDateFrom) entries = entries.filter(e => e.tanggal >= filterDateFrom);
+  if(filterDateTo) entries = entries.filter(e => e.tanggal <= filterDateTo);
 
   const body = document.getElementById('riwayatBody');
   const empty = document.getElementById('riwayatEmpty');
@@ -2102,8 +2242,11 @@ function exportEntriesToCsv(entries, filenamePrefix){
 }
 
 document.getElementById('exportCsvBtn').addEventListener('click', () => {
-  const entries = getEntries(state.machine).slice().sort((a,b)=> a.tanggal.localeCompare(b.tanggal));
-  exportEntriesToCsv(entries, 'laporan-produksi');
+  let entries = getEntries(state.machine).slice().sort((a,b)=> a.tanggal.localeCompare(b.tanggal));
+  if(filterDateFrom) entries = entries.filter(e => e.tanggal >= filterDateFrom);
+  if(filterDateTo) entries = entries.filter(e => e.tanggal <= filterDateTo);
+  const rangeLabel = (filterDateFrom || filterDateTo) ? `${filterDateFrom || 'awal'}_sd_${filterDateTo || 'akhir'}` : 'semua-data';
+  exportEntriesToCsv(entries, `laporan-produksi-${rangeLabel}`);
 });
 
 /* ---- Filter tanggal Summary: satu filter tanggal, tapi tabel mana yang kena filter
@@ -2773,6 +2916,8 @@ function renderSummary(){
     produksiItem: targets.produksiItem && hasFilter,
     lineStop: lineStopIsFiltered,
   }, filterFrom, filterTo);
+
+  renderMonthlyMachineTables();
 }
 
 function renderSummaryTables(data, isFiltered, filterFrom, filterTo){
@@ -2792,12 +2937,14 @@ function renderSummaryTables(data, isFiltered, filterFrom, filterTo){
   const { cols: gsphCols, rows: gsphRows, rowMeta: gsphRowMeta } = buildGsphTableData(data.gsph);
   if(gsphHead) gsphHead.innerHTML = gsphCols.map(c => `<th>${c}</th>`).join('');
   if(gsphBody){
-    const GSPH_HARI_COL = 3; // index kolom "GSPH/Hari (Gab.)" di gsphCols/gsphRows
+    const GSPH_HARI_COL = 3;   // index kolom "GSPH/Hari (Gab.)" di gsphCols/gsphRows
+    const STROKE_HARI_COL = 5; // index kolom "Stroke/Hari (Gab.)" di gsphCols/gsphRows
+    const MERGED_COLS = [GSPH_HARI_COL, STROKE_HARI_COL];
     gsphBody.innerHTML = gsphRows.length
       ? gsphRows.map((r, i) => {
           const meta = gsphRowMeta[i];
           const cells = r.map((v, colIdx) => {
-            if(colIdx === GSPH_HARI_COL){
+            if(MERGED_COLS.includes(colIdx)){
               if(!meta.isFirstOfDay) return ''; // baris lanjutan hari yang sama: sel ini dilewati (sudah kena rowspan)
               return `<td rowspan="${meta.daySpan}" style="text-align:center; vertical-align:middle;">${v}</td>`;
             }
@@ -2823,6 +2970,116 @@ function renderSummaryTables(data, isFiltered, filterFrom, filterTo){
       : emptyRow(7);
   });
 }
+
+/** Nama bulan pendek untuk header tabel bulanan (index 0 = Januari). */
+const NAMA_BULAN_PENDEK = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+
+/** Hitung agregasi bulanan (GSPH, Stroke, Line Stop, NG) untuk KE-4 mesin sekaligus,
+ *  dibatasi hanya entri di tahun berjalan (state.summaryFilter tidak berlaku di sini —
+ *  4 tabel ini memang selalu per tahun berjalan, bukan ikut filter tanggal Summary).
+ *  Saat tahun berganti, otomatis kosong lagi karena belum ada entri di tahun baru itu. */
+function buildMonthlyMachineData(){
+  const currentYear = new Date().getFullYear();
+  const machineIds = ['1600TR','2500TR','800BP','300BP'];
+  const data = {};
+
+  machineIds.forEach(mId => {
+    data[mId] = Array.from({ length: 12 }, () => ({ strokeSum:0, ngSum:0, totalJamSum:0, lineStopMenitSum:0 }));
+    const entries = getEntries(mId);
+    entries.forEach(e => {
+      if(!e.tanggal) return;
+      const parts = e.tanggal.split('-');
+      if(parts.length !== 3) return;
+      const y = parseInt(parts[0], 10);
+      const mo = parseInt(parts[1], 10); // 1-12
+      if(y !== currentYear || mo < 1 || mo > 12) return;
+      const bucket = data[mId][mo - 1];
+      bucket.strokeSum += e.stroke || 0;
+      bucket.ngSum += e.qtyNg || 0;
+      bucket.totalJamSum += (e.computed && e.computed.totalJam) || 0;
+      (e.problems || []).forEach(p => { bucket.lineStopMenitSum += p.menit || 0; });
+    });
+  });
+
+  return { currentYear, machineIds, data };
+}
+
+/** Render ke-4 tabel bulanan (GSPH, Stroke, Line Stop, NG) sekaligus. Dipanggil dari renderSummary()
+ *  supaya selalu update tiap kali tab Summary dibuka, dan mandiri (tidak bergantung filter tanggal). */
+function renderMonthlyMachineTables(){
+  const { currentYear, machineIds, data } = buildMonthlyMachineData();
+
+  document.getElementById('gsphBulanMesinTitle').textContent = `GSPH/BULAN/MESIN - TAHUN ${currentYear}`;
+  document.getElementById('strokeBulanMesinTitle').textContent = `STROKE/BULAN/MESIN - TAHUN ${currentYear}`;
+  document.getElementById('lineStopBulanMesinTitle').textContent = `LINE STOP/BULAN/MESIN - TAHUN ${currentYear}`;
+  document.getElementById('ngBulanMesinTitle').textContent = `NG IN PROSES/BULAN/MESIN - TAHUN ${currentYear}`;
+
+  const headHtml = ['<th>Mesin</th>'].concat(NAMA_BULAN_PENDEK.map(b => `<th>${b}</th>`)).join('');
+  ['tblGsphBulanMesinHead','tblStrokeBulanMesinHead','tblLineStopBulanMesinHead','tblNgBulanMesinHead'].forEach(id => {
+    document.getElementById(id).innerHTML = headHtml;
+  });
+
+  const emptyRow = `<tr><td colspan="13" style="text-align:center; color:var(--text-faint);">Belum ada data di tahun ${currentYear}</td></tr>`;
+  const adaData = machineIds.some(mId => data[mId].some(b => b.totalJamSum > 0 || b.strokeSum > 0 || b.ngSum > 0 || b.lineStopMenitSum > 0));
+
+  const gsphBody = document.getElementById('tblGsphBulanMesin');
+  const strokeBody = document.getElementById('tblStrokeBulanMesin');
+  const lineStopBody = document.getElementById('tblLineStopBulanMesin');
+  const ngBody = document.getElementById('tblNgBulanMesin');
+
+  if(!adaData){
+    gsphBody.innerHTML = emptyRow;
+    strokeBody.innerHTML = emptyRow;
+    lineStopBody.innerHTML = emptyRow;
+    ngBody.innerHTML = emptyRow;
+    return;
+  }
+
+  gsphBody.innerHTML = machineIds.map(mId => {
+    const cells = data[mId].map(b => {
+      const gsph = b.totalJamSum > 0 ? Math.round(b.strokeSum / b.totalJamSum) : 0;
+      return `<td>${b.totalJamSum > 0 ? gsph : '-'}</td>`;
+    }).join('');
+    return `<tr><td>${mId}</td>${cells}</tr>`;
+  }).join('');
+
+  strokeBody.innerHTML = machineIds.map(mId => {
+    const cells = data[mId].map(b => `<td>${b.strokeSum || 0}</td>`).join('');
+    return `<tr><td>${mId}</td>${cells}</tr>`;
+  }).join('');
+
+  lineStopBody.innerHTML = machineIds.map(mId => {
+    const cells = data[mId].map(b => `<td>${b.lineStopMenitSum || 0}</td>`).join('');
+    return `<tr><td>${mId}</td>${cells}</tr>`;
+  }).join('');
+
+  ngBody.innerHTML = machineIds.map(mId => {
+    const cells = data[mId].map(b => `<td>${b.ngSum || 0}</td>`).join('');
+    return `<tr><td>${mId}</td>${cells}</tr>`;
+  }).join('');
+}
+
+/** Export salah satu dari ke-4 tabel bulanan ke CSV. metric: 'gsph' | 'stroke' | 'lineStop' | 'ng'. */
+function exportMonthlyMachineCsv(metric, filenamePrefix){
+  const { currentYear, machineIds, data } = buildMonthlyMachineData();
+  const cols = ['Mesin', ...NAMA_BULAN_PENDEK];
+  const rows = machineIds.map(mId => {
+    const vals = data[mId].map(b => {
+      if(metric === 'gsph') return b.totalJamSum > 0 ? Math.round(b.strokeSum / b.totalJamSum) : 0;
+      if(metric === 'stroke') return b.strokeSum || 0;
+      if(metric === 'lineStop') return b.lineStopMenitSum || 0;
+      if(metric === 'ng') return b.ngSum || 0;
+      return 0;
+    });
+    return [mId, ...vals];
+  });
+  exportTableToCsv(cols, rows, `${filenamePrefix}-TAHUN-${currentYear}`, 'SemuaMesin');
+}
+
+document.getElementById('exportGsphBulanMesinCsvBtn').addEventListener('click', () => exportMonthlyMachineCsv('gsph', 'GSPH-per-Bulan-Mesin'));
+document.getElementById('exportStrokeBulanMesinCsvBtn').addEventListener('click', () => exportMonthlyMachineCsv('stroke', 'Stroke-per-Bulan-Mesin'));
+document.getElementById('exportLineStopBulanMesinCsvBtn').addEventListener('click', () => exportMonthlyMachineCsv('lineStop', 'LineStop-per-Bulan-Mesin'));
+document.getElementById('exportNgBulanMesinCsvBtn').addEventListener('click', () => exportMonthlyMachineCsv('ng', 'NG-per-Bulan-Mesin'));
 
 /* ============================================================
    MASTER RENDER
