@@ -148,6 +148,19 @@
   .menu-sub{ font-size:10.5px; color: var(--text-faint); font-weight:500; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .tabs button.active .menu-sub{ color: var(--accent-ink); opacity:.82; }
 
+  /* ---------- Folder menu "Production" (mengelompokkan Entry/Record/Dashboard/Summary) ---------- */
+  .menu-folder-toggle{ width:100%; }
+  .menu-folder-chevron{
+    margin-left:auto; font-size:11px; opacity:.65; flex-shrink:0;
+    transition: transform .2s ease;
+  }
+  .menu-folder.expanded > .menu-folder-toggle .menu-folder-chevron{ transform: rotate(180deg); }
+  .menu-folder-body{
+    display:none; flex-direction:column; gap:6px; margin:6px 0 4px;
+    padding-left:12px; margin-left:14px; border-left:2px solid var(--border);
+  }
+  .menu-folder.expanded .menu-folder-body{ display:flex; }
+
   @media (max-width: 900px){
     .app-shell{ flex-direction:column; }
     .sidebar{
@@ -181,6 +194,11 @@
     .sidebar .tabs .menu-sub{ display:none; }
     .sidebar .tabs .menu-title{ font-size:10.5px; }
     .sidebar .tabs .menu-icon{ font-size:19px; width:auto; }
+    /* Di HP, folder "Production" dibongkar jadi 4 tombol datar lagi di bottom-nav
+       (header folder & garis indentasinya disembunyikan) supaya UX bottom-nav tetap 1 baris rata. */
+    .menu-folder{ display:contents; }
+    .menu-folder-toggle{ display:none; }
+    .menu-folder-body{ display:contents !important; padding-left:0; margin-left:0; border-left:none; }
     main{ padding-bottom:84px; }
     .sync-banner{ padding:8px 14px; font-size:12px; }
   }
@@ -487,6 +505,43 @@ input[type="time"]::-webkit-calendar-picker-indicator{
   0% { transform: translateX(-50%); } 
   100% { transform: translateX(0); } 
 }
+
+/* ---------- Awan bergerak di bagian atas layar login ---------- */
+.cloud-wrap{
+  position:absolute; top:0; left:0; width:100%; height:100%;
+  overflow:hidden; z-index:0; pointer-events:none;
+}
+.cloud{
+  position:absolute; background:#ffffff; border-radius:100px;
+  animation-name: cloudDrift; animation-timing-function: linear; animation-iteration-count: infinite;
+  will-change: transform;
+}
+.cloud::before, .cloud::after{
+  content:''; position:absolute; background:#ffffff; border-radius:50%;
+}
+/* Gumpalan atas kiri & kanan supaya bentuknya lebih bulat/fluffy, bukan cuma lonjong pipih */
+.cloud::before{ width:58%; height:170%; top:-85%; left:10%; }
+.cloud::after{ width:66%; height:135%; top:-62%; left:46%; }
+
+@keyframes cloudDrift{
+  from{ transform: translateX(0); }
+  to{ transform: translateX(160vw); }
+}
+
+/* ---------- Rintik salju jatuh perlahan ---------- */
+.snow-wrap{
+  position:absolute; top:0; left:0; width:100%; height:100%;
+  overflow:hidden; z-index:0; pointer-events:none;
+}
+.snowflake{
+  position:absolute; top:-10px; background:#ffffff; border-radius:50%;
+  animation-name: snowFall; animation-timing-function: linear; animation-iteration-count: infinite;
+}
+@keyframes snowFall{
+  0%{ transform: translate(0,-10px); }
+  50%{ transform: translate(12px, 50vh); }
+  100%{ transform: translate(-10px, 110vh); }
+}
   .login-card{
   position: relative; z-index: 1;
   background: var(--panel); border:1px solid var(--border); border-radius: 14px;
@@ -566,6 +621,112 @@ input[type="time"]::-webkit-calendar-picker-indicator{
       <path d="M0,60 C200,10 400,100 600,55 C800,10 1000,100 1200,55 C1350,25 1450,40 1600,60 L1600,110 L0,110 Z" fill="#e0f2fe" transform="translate(800,0)"/>
     </svg>
   </div>
+  <div class="cloud-wrap">
+    <div class="cloud" style="top:21.2%; left:-58.6%; width:71px; height:27px; opacity:0.47; animation-duration:72.6s; animation-delay:-49.1s;"></div>
+    <div class="cloud" style="top:28.8%; left:-55.2%; width:82px; height:31px; opacity:0.37; animation-duration:48.3s; animation-delay:-24.4s;"></div>
+    <div class="cloud" style="top:2.8%; left:-49.1%; width:99px; height:37px; opacity:0.65; animation-duration:48.4s; animation-delay:-28.5s;"></div>
+    <div class="cloud" style="top:26.3%; left:-59.6%; width:111px; height:42px; opacity:0.73; animation-duration:54.0s; animation-delay:-8.4s;"></div>
+    <div class="cloud" style="top:30.7%; left:-41.5%; width:57px; height:21px; opacity:0.4; animation-duration:77.8s; animation-delay:-47.0s;"></div>
+    <div class="cloud" style="top:26.2%; left:-19.9%; width:91px; height:34px; opacity:0.89; animation-duration:55.8s; animation-delay:-30.8s;"></div>
+    <div class="cloud" style="top:26.9%; left:-26.0%; width:115px; height:44px; opacity:0.67; animation-duration:71.1s; animation-delay:-3.3s;"></div>
+    <div class="cloud" style="top:8.8%; left:-44.1%; width:56px; height:21px; opacity:0.48; animation-duration:42.7s; animation-delay:-11.9s;"></div>
+    <div class="cloud" style="top:21.1%; left:-39.9%; width:78px; height:29px; opacity:0.47; animation-duration:50.5s; animation-delay:-47.3s;"></div>
+    <div class="cloud" style="top:21.4%; left:-26.5%; width:63px; height:24px; opacity:0.75; animation-duration:45.7s; animation-delay:-17.3s;"></div>
+    <div class="cloud" style="top:31.7%; left:-24.8%; width:92px; height:35px; opacity:0.73; animation-duration:77.6s; animation-delay:-60.2s;"></div>
+    <div class="cloud" style="top:8.9%; left:-58.2%; width:74px; height:28px; opacity:0.5; animation-duration:47.9s; animation-delay:-45.2s;"></div>
+    <div class="cloud" style="top:28.3%; left:-42.7%; width:100px; height:38px; opacity:0.57; animation-duration:81.0s; animation-delay:-37.2s;"></div>
+    <div class="cloud" style="top:9.9%; left:-46.4%; width:92px; height:35px; opacity:0.49; animation-duration:65.5s; animation-delay:-58.8s;"></div>
+  </div>
+  <div class="snow-wrap">
+    <div class="snowflake" style="left:63.9%; width:2.1px; height:2.1px; animation-duration:9.5s; animation-delay:-11.7s; opacity:0.77;"></div>
+    <div class="snowflake" style="left:67.7%; width:4.7px; height:4.7px; animation-duration:7.8s; animation-delay:-8.7s; opacity:0.41;"></div>
+    <div class="snowflake" style="left:21.9%; width:3.5px; height:3.5px; animation-duration:7.2s; animation-delay:-12.0s; opacity:0.72;"></div>
+    <div class="snowflake" style="left:54.5%; width:2.7px; height:2.7px; animation-duration:12.3s; animation-delay:-2.9s; opacity:0.4;"></div>
+    <div class="snowflake" style="left:80.6%; width:4.1px; height:4.1px; animation-duration:10.1s; animation-delay:-12.7s; opacity:0.88;"></div>
+    <div class="snowflake" style="left:33.7%; width:2.3px; height:2.3px; animation-duration:7.9s; animation-delay:-2.3s; opacity:0.7;"></div>
+    <div class="snowflake" style="left:80.7%; width:4.2px; height:4.2px; animation-duration:11.8s; animation-delay:-0.4s; opacity:0.59;"></div>
+    <div class="snowflake" style="left:55.2%; width:4.5px; height:4.5px; animation-duration:12.6s; animation-delay:-2.1s; opacity:0.69;"></div>
+    <div class="snowflake" style="left:70.5%; width:2.1px; height:2.1px; animation-duration:9.1s; animation-delay:-10.7s; opacity:0.44;"></div>
+    <div class="snowflake" style="left:23.3%; width:2.3px; height:2.3px; animation-duration:9.5s; animation-delay:-5.5s; opacity:0.58;"></div>
+    <div class="snowflake" style="left:37.0%; width:2.6px; height:2.6px; animation-duration:9.4s; animation-delay:-1.0s; opacity:0.72;"></div>
+    <div class="snowflake" style="left:60.9%; width:2.5px; height:2.5px; animation-duration:13.6s; animation-delay:-12.5s; opacity:0.59;"></div>
+    <div class="snowflake" style="left:99.0%; width:3.9px; height:3.9px; animation-duration:12.0s; animation-delay:-4.7s; opacity:0.82;"></div>
+    <div class="snowflake" style="left:77.6%; width:2.7px; height:2.7px; animation-duration:7.3s; animation-delay:-10.3s; opacity:0.53;"></div>
+    <div class="snowflake" style="left:21.1%; width:4.8px; height:4.8px; animation-duration:14.9s; animation-delay:-10.3s; opacity:0.73;"></div>
+    <div class="snowflake" style="left:39.6%; width:4.7px; height:4.7px; animation-duration:11.1s; animation-delay:-11.0s; opacity:0.52;"></div>
+    <div class="snowflake" style="left:56.1%; width:2.8px; height:2.8px; animation-duration:12.3s; animation-delay:-1.5s; opacity:0.6;"></div>
+    <div class="snowflake" style="left:21.9%; width:5.0px; height:5.0px; animation-duration:11.6s; animation-delay:-13.6s; opacity:0.42;"></div>
+    <div class="snowflake" style="left:11.0%; width:3.9px; height:3.9px; animation-duration:14.1s; animation-delay:-8.7s; opacity:0.43;"></div>
+    <div class="snowflake" style="left:38.2%; width:5.0px; height:5.0px; animation-duration:11.8s; animation-delay:-0.4s; opacity:0.83;"></div>
+    <div class="snowflake" style="left:1.1%; width:4.2px; height:4.2px; animation-duration:13.1s; animation-delay:-6.9s; opacity:0.53;"></div>
+    <div class="snowflake" style="left:64.1%; width:2.3px; height:2.3px; animation-duration:10.9s; animation-delay:-8.2s; opacity:0.88;"></div>
+    <div class="snowflake" style="left:87.6%; width:2.8px; height:2.8px; animation-duration:11.5s; animation-delay:-12.3s; opacity:0.86;"></div>
+    <div class="snowflake" style="left:87.1%; width:2.9px; height:2.9px; animation-duration:12.8s; animation-delay:-5.9s; opacity:0.48;"></div>
+    <div class="snowflake" style="left:76.3%; width:3.6px; height:3.6px; animation-duration:14.0s; animation-delay:-7.0s; opacity:0.4;"></div>
+    <div class="snowflake" style="left:32.4%; width:2.1px; height:2.1px; animation-duration:15.4s; animation-delay:-1.8s; opacity:0.82;"></div>
+    <div class="snowflake" style="left:30.8%; width:2.2px; height:2.2px; animation-duration:14.9s; animation-delay:-0.8s; opacity:0.44;"></div>
+    <div class="snowflake" style="left:48.6%; width:2.2px; height:2.2px; animation-duration:13.8s; animation-delay:-3.5s; opacity:0.46;"></div>
+    <div class="snowflake" style="left:39.9%; width:2.7px; height:2.7px; animation-duration:16.0s; animation-delay:-8.2s; opacity:0.45;"></div>
+    <div class="snowflake" style="left:4.7%; width:2.3px; height:2.3px; animation-duration:12.6s; animation-delay:-10.0s; opacity:0.61;"></div>
+    <div class="snowflake" style="left:6.4%; width:3.1px; height:3.1px; animation-duration:16.0s; animation-delay:-8.5s; opacity:0.89;"></div>
+    <div class="snowflake" style="left:86.1%; width:2.0px; height:2.0px; animation-duration:13.5s; animation-delay:-9.2s; opacity:0.67;"></div>
+    <div class="snowflake" style="left:26.7%; width:3.9px; height:3.9px; animation-duration:8.0s; animation-delay:-3.5s; opacity:0.63;"></div>
+    <div class="snowflake" style="left:95.4%; width:4.6px; height:4.6px; animation-duration:9.4s; animation-delay:-4.7s; opacity:0.49;"></div>
+    <div class="snowflake" style="left:91.3%; width:4.6px; height:4.6px; animation-duration:9.7s; animation-delay:-6.2s; opacity:0.7;"></div>
+    <div class="snowflake" style="left:15.3%; width:4.3px; height:4.3px; animation-duration:11.9s; animation-delay:-9.3s; opacity:0.67;"></div>
+    <div class="snowflake" style="left:0.1%; width:3.0px; height:3.0px; animation-duration:7.2s; animation-delay:-6.7s; opacity:0.84;"></div>
+    <div class="snowflake" style="left:83.2%; width:2.9px; height:2.9px; animation-duration:7.5s; animation-delay:-6.6s; opacity:0.87;"></div>
+    <div class="snowflake" style="left:8.6%; width:3.5px; height:3.5px; animation-duration:7.6s; animation-delay:-5.8s; opacity:0.78;"></div>
+    <div class="snowflake" style="left:12.8%; width:3.4px; height:3.4px; animation-duration:11.9s; animation-delay:-3.2s; opacity:0.84;"></div>
+    <div class="snowflake" style="left:42.3%; width:2.6px; height:2.6px; animation-duration:11.9s; animation-delay:-8.7s; opacity:0.5;"></div>
+    <div class="snowflake" style="left:31.2%; width:5.0px; height:5.0px; animation-duration:12.8s; animation-delay:-5.6s; opacity:0.66;"></div>
+    <div class="snowflake" style="left:12.1%; width:2.7px; height:2.7px; animation-duration:10.0s; animation-delay:-5.9s; opacity:0.52;"></div>
+    <div class="snowflake" style="left:22.0%; width:2.2px; height:2.2px; animation-duration:12.7s; animation-delay:-2.9s; opacity:0.85;"></div>
+    <div class="snowflake" style="left:86.0%; width:2.2px; height:2.2px; animation-duration:9.1s; animation-delay:-6.1s; opacity:0.51;"></div>
+    <div class="snowflake" style="left:13.2%; width:4.8px; height:4.8px; animation-duration:12.1s; animation-delay:-5.7s; opacity:0.79;"></div>
+    <div class="snowflake" style="left:80.7%; width:2.6px; height:2.6px; animation-duration:7.9s; animation-delay:-3.4s; opacity:0.61;"></div>
+    <div class="snowflake" style="left:46.7%; width:4.2px; height:4.2px; animation-duration:13.1s; animation-delay:-12.9s; opacity:0.45;"></div>
+    <div class="snowflake" style="left:40.3%; width:3.0px; height:3.0px; animation-duration:14.8s; animation-delay:-3.7s; opacity:0.5;"></div>
+    <div class="snowflake" style="left:44.9%; width:3.3px; height:3.3px; animation-duration:9.5s; animation-delay:-2.4s; opacity:0.86;"></div>
+    <div class="snowflake" style="left:44.3%; width:4.6px; height:4.6px; animation-duration:12.0s; animation-delay:-0.6s; opacity:0.9;"></div>
+    <div class="snowflake" style="left:83.6%; width:4.9px; height:4.9px; animation-duration:15.3s; animation-delay:-13.0s; opacity:0.48;"></div>
+    <div class="snowflake" style="left:48.6%; width:2.6px; height:2.6px; animation-duration:10.6s; animation-delay:-0.6s; opacity:0.59;"></div>
+    <div class="snowflake" style="left:98.5%; width:2.8px; height:2.8px; animation-duration:14.1s; animation-delay:-6.4s; opacity:0.61;"></div>
+    <div class="snowflake" style="left:95.7%; width:5.0px; height:5.0px; animation-duration:12.0s; animation-delay:-8.6s; opacity:0.48;"></div>
+    <div class="snowflake" style="left:29.7%; width:4.9px; height:4.9px; animation-duration:12.2s; animation-delay:-6.6s; opacity:0.77;"></div>
+    <div class="snowflake" style="left:5.7%; width:3.8px; height:3.8px; animation-duration:11.5s; animation-delay:-9.8s; opacity:0.48;"></div>
+    <div class="snowflake" style="left:96.1%; width:2.2px; height:2.2px; animation-duration:8.7s; animation-delay:-5.2s; opacity:0.74;"></div>
+    <div class="snowflake" style="left:23.5%; width:2.4px; height:2.4px; animation-duration:15.0s; animation-delay:-3.7s; opacity:0.7;"></div>
+    <div class="snowflake" style="left:61.9%; width:3.3px; height:3.3px; animation-duration:12.3s; animation-delay:-6.4s; opacity:0.87;"></div>
+    <div class="snowflake" style="left:20.4%; width:4.1px; height:4.1px; animation-duration:9.1s; animation-delay:-3.6s; opacity:0.74;"></div>
+    <div class="snowflake" style="left:30.0%; width:2.9px; height:2.9px; animation-duration:13.8s; animation-delay:-1.0s; opacity:0.63;"></div>
+    <div class="snowflake" style="left:99.8%; width:5.0px; height:5.0px; animation-duration:7.7s; animation-delay:-1.6s; opacity:0.53;"></div>
+    <div class="snowflake" style="left:93.3%; width:4.6px; height:4.6px; animation-duration:14.9s; animation-delay:-5.5s; opacity:0.48;"></div>
+    <div class="snowflake" style="left:83.4%; width:4.1px; height:4.1px; animation-duration:12.5s; animation-delay:-12.3s; opacity:0.73;"></div>
+    <div class="snowflake" style="left:0.8%; width:4.5px; height:4.5px; animation-duration:9.7s; animation-delay:-6.4s; opacity:0.87;"></div>
+    <div class="snowflake" style="left:13.4%; width:2.3px; height:2.3px; animation-duration:8.0s; animation-delay:-4.4s; opacity:0.54;"></div>
+    <div class="snowflake" style="left:60.5%; width:4.2px; height:4.2px; animation-duration:8.8s; animation-delay:-5.6s; opacity:0.53;"></div>
+    <div class="snowflake" style="left:48.9%; width:4.7px; height:4.7px; animation-duration:14.6s; animation-delay:-1.3s; opacity:0.61;"></div>
+    <div class="snowflake" style="left:27.7%; width:2.0px; height:2.0px; animation-duration:13.9s; animation-delay:-8.9s; opacity:0.53;"></div>
+    <div class="snowflake" style="left:74.1%; width:3.7px; height:3.7px; animation-duration:10.8s; animation-delay:-0.1s; opacity:0.44;"></div>
+    <div class="snowflake" style="left:88.3%; width:4.7px; height:4.7px; animation-duration:11.9s; animation-delay:-9.9s; opacity:0.69;"></div>
+    <div class="snowflake" style="left:14.8%; width:2.4px; height:2.4px; animation-duration:9.8s; animation-delay:-8.8s; opacity:0.8;"></div>
+    <div class="snowflake" style="left:86.1%; width:4.7px; height:4.7px; animation-duration:8.9s; animation-delay:-2.2s; opacity:0.45;"></div>
+    <div class="snowflake" style="left:78.0%; width:4.7px; height:4.7px; animation-duration:10.7s; animation-delay:-6.6s; opacity:0.48;"></div>
+    <div class="snowflake" style="left:93.0%; width:4.6px; height:4.6px; animation-duration:15.8s; animation-delay:-12.8s; opacity:0.84;"></div>
+    <div class="snowflake" style="left:2.5%; width:4.2px; height:4.2px; animation-duration:10.0s; animation-delay:-9.3s; opacity:0.8;"></div>
+    <div class="snowflake" style="left:86.4%; width:4.4px; height:4.4px; animation-duration:9.4s; animation-delay:-7.4s; opacity:0.45;"></div>
+    <div class="snowflake" style="left:87.2%; width:4.6px; height:4.6px; animation-duration:9.0s; animation-delay:-7.3s; opacity:0.63;"></div>
+    <div class="snowflake" style="left:30.5%; width:4.4px; height:4.4px; animation-duration:9.0s; animation-delay:-0.2s; opacity:0.5;"></div>
+    <div class="snowflake" style="left:32.8%; width:4.6px; height:4.6px; animation-duration:15.7s; animation-delay:-4.4s; opacity:0.72;"></div>
+    <div class="snowflake" style="left:40.0%; width:4.9px; height:4.9px; animation-duration:11.8s; animation-delay:-11.1s; opacity:0.46;"></div>
+    <div class="snowflake" style="left:97.0%; width:2.5px; height:2.5px; animation-duration:15.7s; animation-delay:-4.2s; opacity:0.45;"></div>
+    <div class="snowflake" style="left:43.5%; width:4.2px; height:4.2px; animation-duration:9.8s; animation-delay:-5.9s; opacity:0.66;"></div>
+    <div class="snowflake" style="left:38.5%; width:3.7px; height:3.7px; animation-duration:9.3s; animation-delay:-6.6s; opacity:0.4;"></div>
+    <div class="snowflake" style="left:92.6%; width:3.6px; height:3.6px; animation-duration:13.5s; animation-delay:-10.0s; opacity:0.74;"></div>
+    <div class="snowflake" style="left:36.4%; width:2.2px; height:2.2px; animation-duration:13.0s; animation-delay:-4.3s; opacity:0.56;"></div>
+    <div class="snowflake" style="left:84.8%; width:4.2px; height:4.2px; animation-duration:9.7s; animation-delay:-3.0s; opacity:0.6;"></div>
+  </div>
   <div style="display:flex; flex-direction:column; align-items:center;">
    <div class="login-card">
     <div class="login-logo"><img src="data:image/png;base64,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f//WrVs7OzuNMUqp4cOHT5gwQWvtZut+1dzc3NTUdMITeHp0RE535fuqHP+Oq2tzNSbNzc2NjY1Kqbvuuuvee7+XTpeUl5d7nldaWlZeXv7DH/5QROI4juNYRB544AEAuO2226y12Wx29uzZN998c0dHx6hRoz75yU+68b/5zW8CQG9v71NPPVVVVTV1ytT6+lHVw6qfe+4594XvfOc7APDnf35LHMWFyWzetLmhYXRVVZXv+2VlZb7vX3fd9cbYz372dqV0c3NzOp2eMKF17dq1W7Zsqampueaaa6IoyuVy8+fPb2xsPHDgwIIFC0aNGlVZWekqPr797W/39vZeddVVyWSytLTU9/10Oj1r1qwnn3zSva6qqkomk9OnT//qV786YsSIgVWXJhKJb3/72w8//HBpaem0adPq6urq6+vffPPNZcuWAcCjjz7qVjF79uzzzz8/DENrrducZ599duTIkcOGDaurqwuC4Ac/+IGI7N+//13vepdru+Z53vz58zs6Orq6us477zytdUtLS319vVLqH/7hH8IwvPHGGwGgtbW1tra2qqrqgQcecEWITi6e+fWW2OJrX/saIi5atGjHjh2f+cxnPM976aWXVq1a9Y1vfENrfe+9965evXrv3r2uXtat/Cc/+YlTE88++6yITJ8+3bFFbW1tgS2+8Y1vIGJHR8eVV17Z2NjY19e3f//+iy+++LOf/Swz9/T0zJ07t7S0tLq6euPGjW7ZzNzX17dmzZoFCxZUVFRce+21K1b8Ydu2bT9/9OcA8OUvf3nfvn1Llixpbm6eOnVqgbF+8YtfPPjggwDw4IMP9vX1jRkzZsqUKevWrdu9e/enPvUpAHjhhRe2bt26ZMmSyy+/fPTo0UuWLNm8efPrr78OAPfcc8+OHTvWrVu3cePGnTt3rl69+v7771dKfeELX1ixYsXGjRvPP//8iy++OJvN7tq1a8aMGd/4xjdWrFiBiA8//LBb5kUXXTR9+vRMJuO29MiRI83NzTNnzly/fv327dvf+973lpSU7N69+8477wSARx55pKOj41e/+hUAfPazn+3r62ttbZ03b96BAwd27tx57bXXVlZWtrW13XjjjU1NTZs2bdq2bdusWbOmT5/e2dlZoNefji201lu3brXW3nXXXQCwdu1aEXniiSe01i+88IIr1XXfd+1I77//fneGLrjggo6Ojosuuuimm27as2dPfX39Jz7xCTf+17/+dQA4cODAX//1XwPAxz72sUcfffSNN97o6ekRkeeff76ysvLuu++uq6u7++67C7coTHL48OG33HKLe33jjTeWlpYWZn733XcDwJtvvpnL5WbMmDFhwoTq6uqrrrqKmZ9//nkAeOihh9w329vbq6ur/+qv/sr9ecMNN0ycONG9dmxx++23P/nkk/fff/+LL77o3l++fHkQBD/+8Y/dFn3gAx9wcvGxxx5bsmSJiLz88suDpMWMGTPc5EXkmWeecZzqPj106NArr7zS3t7e2tp6zTXXFJZw8803Dx8+vK2tbfLkyddcc82hQ4f279//3ve+d9q0aQcPHnz3u9/d0tLS09OTzWavu+66sWPHHjlyxG3RWbHF6fMtTt3cwxjjBNfq1atvueWWpqYma20YhkTU39/vSmaL63ddJd1dd9116623fve73/V93wkPY4zv+652zxl6nud961vfqqioePLJJ3/605/W1NS4X/3qV78qKyv79Kc//cYbbzz++OOf//znnUZ3Tl1vb68duIwxPT09NTU1TiUlk8kRI0Z4nnfgwIELL7zwm9/85nve855kMnnnnXci4oEDB7TWDQ0NcRwbY0pKSioqKo4cOeJ42hgTx7HrUODW/tRTTy1YsCAMwzlz5syePTuZTGYyGWZ2q0bE73//+w0NDU8//fSPfvSjUaNG/fu///uIESMcnuGm6kjl7AA3ASJyrQfiOK6urr7iiiuOHDnS2dk5f/5818EzkUg0NTUdPnw4iqJkMrlgwYJrrrnmyJEjbW1t9913X01NjbV2586d8+fP7+np2b59+ze/+c3Kysozf47aCRoZnMPl6H3DDTfcdtttTz311H333ZdMJgvdCF33Bd/3XU+IgWpa7U7ql770pf/4j/9Ys2ZNIpFwTrbrFOB6hrjj8thjj914442bNm3aunVrY2Pjt771rU2bNi1YsODgwYPXX3/98uXL169fv2TJkgKeo7UutHxQSgVBUFdX19HR0dnZWVpaqrVes2aNiDQ2NgKA6yNw4YUXXnLJJQAwYsQIY8yyZcs8z0smk+3t7fv27Rs3bpyrHvZ9343sXiPivffeu27duvXr1//sZz9LpVKuQTMAOHDi4MGDjzzyyK233rpt27aNGzcS0Xe+853u7m7nVrh5OruvUFfY3NzM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" alt="PT Nusa Toyotetsu Corp" class="brand-logo"></div>
@@ -614,25 +775,34 @@ input[type="time"]::-webkit-calendar-picker-indicator{
 </div>
     <div class="sidebar-section-label">Menu</div>
     <div class="tabs" id="tabs">
-  <div class="tab-group">
-    <button data-view="input" class="active">
-      <span class="menu-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg></span>
-      <span class="menu-text"><span class="menu-title">Entry Data</span><span class="menu-sub">Form Produksi Harian</span></span>
+  <div class="menu-folder expanded" id="productionFolder">
+    <button type="button" class="menu-folder-toggle" id="productionFolderToggle">
+      <span class="menu-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2Z"/></svg></span>
+      <span class="menu-text"><span class="menu-title">Production</span><span class="menu-sub">Entry, Record, Dashboard, Summary</span></span>
+      <span class="menu-folder-chevron">&#9662;</span>
     </button>
-    <select id="machineSelect"></select>
+    <div class="menu-folder-body">
+      <div class="tab-group">
+        <button data-view="input" class="active">
+          <span class="menu-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg></span>
+          <span class="menu-text"><span class="menu-title">Entry Data</span><span class="menu-sub">Form Produksi Harian</span></span>
+        </button>
+        <select id="machineSelect"></select>
+      </div>
+      <button data-view="riwayat">
+        <span class="menu-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg></span>
+        <span class="menu-text"><span class="menu-title">Record Data</span><span class="menu-sub">Data yang tersimpan</span></span>
+      </button>
+      <button data-view="dashboard">
+        <span class="menu-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+        <span class="menu-text"><span class="menu-title">Dashboard</span><span class="menu-sub">Analisa &amp; Grafik</span></span>
+      </button>
+      <button data-view="summary">
+        <span class="menu-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg></span>
+        <span class="menu-text"><span class="menu-title">Summary</span><span class="menu-sub">Ringkasan Bulanan</span></span>
+      </button>
+    </div>
   </div>
-  <button data-view="riwayat">
-    <span class="menu-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg></span>
-    <span class="menu-text"><span class="menu-title">Record Data</span><span class="menu-sub">Data yang tersimpan</span></span>
-  </button>
-  <button data-view="dashboard">
-    <span class="menu-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
-    <span class="menu-text"><span class="menu-title">Dashboard</span><span class="menu-sub">Analisa &amp; Grafik</span></span>
-  </button>
-  <button data-view="summary">
-    <span class="menu-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg></span>
-    <span class="menu-text"><span class="menu-title">Summary</span><span class="menu-sub">Ringkasan Bulanan</span></span>
-  </button>
 </div>
 
     <div class="sidebar-footer">
@@ -878,7 +1048,7 @@ input[type="time"]::-webkit-calendar-picker-indicator{
         <h3>Overview 4 Mesin <span id="dashboardOverviewRangeLabel" style="color:var(--text-faint); text-transform:none; font-weight:400;">(Hari Ini)</span></h3>
         <div class="table-wrap summary-table">
           <table>
-            <thead><tr><th>Mesin</th><th>GSPH</th><th>Total Stroke</th><th>Total NG</th><th>Line Stop (Jam)</th></tr></thead>
+            <thead><tr><th>Mesin</th><th>Target GSPH</th><th>Actual GSPH</th><th>Total Stroke</th><th>Frekuensi Dandori</th><th>Total NG</th><th>Line Stop (Jam)</th></tr></thead>
             <tbody id="tblOverview4Mesin"><tr></tr></tbody>
           </table>
         </div>
@@ -887,6 +1057,14 @@ input[type="time"]::-webkit-calendar-picker-indicator{
     <div class="grid cols-2" style="margin-top:14px;">
       <div class="chart-card" style="grid-column:1 / -1;">
         <h3>Top Problem <span id="dashboardTopProblemRangeLabel" style="color:var(--text-faint); text-transform:none; font-weight:400;">(Hari Ini)</span></h3>
+        <div style="display:flex; gap:14px; flex-wrap:wrap; margin-bottom:10px; font-size:11.5px; color:var(--text-faint);">
+          <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#3b82f6; margin-right:5px;"></span>Mesin</span>
+          <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#ef4444; margin-right:5px;"></span>Dies</span>
+          <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#22c55e; margin-right:5px;"></span>Finger</span>
+          <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#f97316; margin-right:5px;"></span>Misgrip</span>
+          <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#9ca3af; margin-right:5px;"></span>Material</span>
+          <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#eab308; margin-right:5px;"></span>Others</span>
+        </div>
         <canvas id="chartTopProblemToday"></canvas>
       </div>
     </div>
@@ -989,7 +1167,7 @@ input[type="time"]::-webkit-calendar-picker-indicator{
         </h3>
         <div class="table-wrap summary-table">
           <table>
-            <thead><tr><th>No.</th><th>Part Nomor</th><th>Total Qty NG</th><th>% dari Total</th><th>Kumulatif %</th></tr></thead>
+            <thead><tr><th>No.</th><th>Part Nomor</th><th>Actual Produksi (Pcs OK)</th><th>Total Qty NG</th><th>Rasio NG (%)</th><th>Kumulatif %</th></tr></thead>
             <tbody id="tblNgPartPareto"><tr></tr></tbody>
           </table>
         </div>
@@ -1602,6 +1780,8 @@ function applyRolePermissions(){
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     const riwayatSection = document.getElementById('view-riwayat');
     if(riwayatSection) riwayatSection.classList.add('active');
+    const productionFolder = document.getElementById('productionFolder');
+    if(productionFolder) productionFolder.classList.add('expanded');
     renderAll();
     syncFromServer();
   }
@@ -1816,13 +1996,18 @@ function updateMachineSelectVisibility(){
   const group = document.querySelector('.tab-group');
   if(group) group.classList.toggle('expanded', state.view === 'input' || !canInputUser());
 }
+document.getElementById('productionFolderToggle').addEventListener('click', () => {
+  document.getElementById('productionFolder').classList.toggle('expanded');
+});
 document.getElementById('tabs').addEventListener('click', (e) => {
   const btn = e.target.closest('button');
-  if(!btn) return;
+  if(!btn || !btn.dataset.view) return;
   state.view = btn.dataset.view;
-  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('active', b === btn));
+  document.querySelectorAll('#tabs button[data-view]').forEach(b => b.classList.toggle('active', b === btn));
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('view-' + state.view).classList.add('active');
+  const productionFolder = document.getElementById('productionFolder');
+  if(productionFolder && productionFolder.contains(btn)) productionFolder.classList.add('expanded');
   updateMachineSelectVisibility();
   renderAll();
   if(state.view === 'riwayat' || state.view === 'dashboard' || state.view === 'summary'){
@@ -2538,8 +2723,11 @@ function renderDashboard(){
   const prevTotalLineStopJam = prevRangeEntries.reduce((s,e)=> s+e.computed.lineStop, 0)/60;
 
   const gsphOf = (list) => {
-    const ratios = list.filter(e => e.computed.totalJam > 0).map(e => e.stroke / e.computed.totalJam);
-    return ratios.length ? Math.round(ratios.reduce((a,b)=>a+b,0)/ratios.length) : 0;
+    // Pakai e.gsph (nilai yang sama dengan kolom GSPH di Record Data), yang rumusnya:
+    // Stroke / (Total Menit - Waktu Line Stop Terplanning) x 60 — BUKAN stroke/totalJam murni.
+    // Ini memastikan angka GSPH di Dashboard selalu sama dengan yang di Record Data.
+    const validList = list.filter(e => e.gsph !== null && e.gsph !== undefined && e.gsph > 0);
+    return validList.length ? Math.round(validList.reduce((a,e)=> a + e.gsph, 0) / validList.length) : 0;
   };
   const strokeAvgOf = (list) => list.length ? Math.round(list.reduce((s,e)=> s+e.stroke,0)/list.length) : 0;
   const pctAvgOf = (list, field) => list.length ? Math.round(list.reduce((s,e)=> s+e.computed[field],0)/list.length) : 0;
@@ -2919,23 +3107,34 @@ const groupedOpts = {
   /* ---- Pareto: breakdown Line Stop per jenis (Machine/Dies/Finger/Misgrip/Material/Others),
    *  total 1 bulan dalam menit (batang + kumulatif %). "Terencana" TIDAK diikutkan di sini
    *  karena bukan bagian dari kategori problem (Machine/Dies/Finger/Misgrip/Material/Others). ---- */
+  // Palet warna kategori problem, dipakai bareng oleh chart Pareto Line Stop ini dan chart Top Problem
+  // di bawah, supaya warna kategori yang sama selalu konsisten di seluruh Dashboard.
+  const PROBLEM_CATEGORY_COLOR = {
+    Machine: '#3b82f6',  // Mesin - biru
+    Dies: '#ef4444',     // Dies - merah
+    Finger: '#22c55e',   // Finger - hijau
+    Misgrip: '#f97316',  // Misgrip - oranye
+    Others: '#eab308',   // Others - kuning
+    Material: '#9ca3af', // Material - abu-abu
+  };
   const lineStopCatMap = {};
   getProblemCategories().forEach(c => lineStopCatMap[c] = 0);
   monthEntries.forEach(e => {
     (e.problems||[]).forEach(p => { lineStopCatMap[p.kategori] = (lineStopCatMap[p.kategori]||0) + (p.menit||0); });
   });
   const lineStopCatSorted = Object.entries(lineStopCatMap)
-    .map(([k,v]) => [LINE_STOP_CATEGORY_LABEL[k] || k, v])
-    .filter(([,v]) => v > 0)
-    .sort((a,b)=> b[1]-a[1]);
-  const lineStopCatTotal = lineStopCatSorted.reduce((s,[,v])=> s+v, 0);
+    .map(([k,v]) => [k, LINE_STOP_CATEGORY_LABEL[k] || k, v])
+    .filter(([,,v]) => v > 0)
+    .sort((a,b)=> b[2]-a[2]);
+  const lineStopCatTotal = lineStopCatSorted.reduce((s,[,,v])=> s+v, 0);
   let cumLineStop = 0;
-  const lineStopCatCumPct = lineStopCatSorted.map(([,v]) => { cumLineStop += v; return lineStopCatTotal ? Math.round((cumLineStop/lineStopCatTotal)*100) : 0; });
+  const lineStopCatCumPct = lineStopCatSorted.map(([,,v]) => { cumLineStop += v; return lineStopCatTotal ? Math.round((cumLineStop/lineStopCatTotal)*100) : 0; });
+  const lineStopCatColors = lineStopCatSorted.map(([k]) => PROBLEM_CATEGORY_COLOR[k] || '#ef4444');
   charts.lineStopPareto = new Chart(document.getElementById('chartLineStopPareto'), {
     data:{
-      labels: lineStopCatSorted.map(([k])=>k),
+      labels: lineStopCatSorted.map(([,label])=>label),
       datasets:[
-        { type:'bar', label:'Total Waktu (menit)', data: lineStopCatSorted.map(([,v])=>v), backgroundColor:'#ef4444', borderRadius:3, order:2, yAxisID:'y' },
+        { type:'bar', label:'Total Waktu (menit)', data: lineStopCatSorted.map(([,,v])=>v), backgroundColor: lineStopCatColors, borderRadius:3, order:2, yAxisID:'y' },
         { type:'line', label:'Kumulatif %', data: lineStopCatCumPct, borderColor:'#f4b740', backgroundColor:'transparent', tension:.2, pointRadius:3, order:1, yAxisID:'y1' },
       ]
     },
@@ -3011,27 +3210,37 @@ const groupedOpts = {
       const mNg = mEntries.reduce((s,e)=> s+e.qtyNg, 0);
       const mLineStopJam = (mEntries.reduce((s,e)=> s+e.computed.lineStop, 0)/60).toFixed(1);
       const mGsph = gsphOf(mEntries);
+      const mDandoriFreq = mEntries.length; // frekuensi laporan/dandori, sama polanya dengan "Frek. Dandori" di Summary
       const isActive = m.id === state.machine;
-      return `<tr${isActive ? ' style="background:var(--panel-2); font-weight:700;"' : ''}><td>${escapeHtml(m.label)}${isActive ? ' <span style="font-size:10px; color:var(--text-faint); font-weight:400;">(aktif)</span>' : ''}</td><td>${mGsph.toLocaleString('id-ID')}</td><td>${mStroke.toLocaleString('id-ID')}</td><td>${mNg.toLocaleString('id-ID')}</td><td>${mLineStopJam}</td></tr>`;
+      return `<tr${isActive ? ' style="background:var(--panel-2); font-weight:700;"' : ''}><td>${escapeHtml(m.label)}${isActive ? ' <span style="font-size:10px; color:var(--text-faint); font-weight:400;">(aktif)</span>' : ''}</td><td>${m.target ?? '-'}</td><td>${mGsph.toLocaleString('id-ID')}</td><td>${mStroke.toLocaleString('id-ID')}</td><td>${mDandoriFreq}</td><td>${mNg.toLocaleString('id-ID')}</td><td>${mLineStopJam}</td></tr>`;
     });
     overviewBody.innerHTML = rows.join('');
   }
 
-  /* ---- Top Problem (Line Stop) untuk rentang yang dipilih, mesin yang sedang aktif ---- */
+  /* ---- Top Problem (Line Stop) untuk rentang yang dipilih, mesin yang sedang aktif ----
+   *  Dikelompokkan per kombinasi (kategori + keterangan) supaya tiap batang jelas
+   *  "faktor"-nya (Mesin/Dies/Finger/Misgrip/Material/Others), dan diwarnai sesuai kategori
+   *  (pakai PROBLEM_CATEGORY_COLOR yang sama dengan chart Pareto Line Stop di atas). */
   const topProblemMap = {};
   todayEntries.forEach(e => {
     (e.problems||[]).forEach(p => {
       if(!p.menit) return;
-      const key = (p.keterangan && p.keterangan.trim()) || (LINE_STOP_CATEGORY_LABEL[p.kategori] || p.kategori || 'Lainnya');
-      topProblemMap[key] = (topProblemMap[key]||0) + p.menit;
+      const catLabel = LINE_STOP_CATEGORY_LABEL[p.kategori] || p.kategori || 'Lainnya';
+      const ketText = (p.keterangan && p.keterangan.trim()) || catLabel;
+      const key = (p.kategori || 'Lainnya') + '|||' + ketText;
+      if(!topProblemMap[key]) topProblemMap[key] = { kategori: p.kategori, catLabel, ketText, menit: 0 };
+      topProblemMap[key].menit += p.menit;
     });
   });
-  const topProblemSorted = Object.entries(topProblemMap).sort((a,b)=> b[1]-a[1]).slice(0,8);
+  const topProblemSorted = Object.values(topProblemMap).sort((a,b)=> b.menit-a.menit).slice(0,8);
+  const topProblemLabels = topProblemSorted.length ? topProblemSorted.map(it => `${it.ketText} (${it.catLabel})`) : ['Belum ada problem'];
+  const topProblemValues = topProblemSorted.length ? topProblemSorted.map(it => it.menit) : [0];
+  const topProblemColors = topProblemSorted.length ? topProblemSorted.map(it => PROBLEM_CATEGORY_COLOR[it.kategori] || '#ef4444') : ['#ef4444'];
   charts.topProblem = new Chart(document.getElementById('chartTopProblemToday'), {
     type: 'bar',
     data: {
-      labels: topProblemSorted.length ? topProblemSorted.map(([k])=>k) : ['Belum ada problem'],
-      datasets: [{ label: 'Total Waktu (menit)', data: topProblemSorted.length ? topProblemSorted.map(([,v])=>v) : [0], backgroundColor:'#ef4444', borderRadius:4 }]
+      labels: topProblemLabels,
+      datasets: [{ label: 'Total Waktu (menit)', data: topProblemValues, backgroundColor: topProblemColors, borderRadius:4 }]
     },
     options: {
       indexAxis: 'y',
@@ -3122,7 +3331,7 @@ function aggregateEntries(entries){
       pcsokSum: p.pcsokSum,
       qtyNgSum: p.qtyNgSum,
       jenisNg: Array.from(p.jenisSet).join(', '),
-      rasioNg: (p.pcsokSum + p.qtyNgSum) > 0 ? Math.round((p.qtyNgSum / (p.pcsokSum + p.qtyNgSum)) * 1000) / 10 : 0,
+      rasioNg: (p.pcsokSum + p.qtyNgSum) > 0 ? (Math.round((p.qtyNgSum / (p.pcsokSum + p.qtyNgSum)) * 10000) / 100).toFixed(2) : '0.00',
     }))
     .sort((a,b)=> a.tanggal.localeCompare(b.tanggal) || a.shift.localeCompare(b.shift) || a.part.localeCompare(b.part));
 
@@ -3220,17 +3429,25 @@ function buildNgJenisParetoData(entries){
 
 /** Sama seperti buildNgJenisParetoData(), tapi dikelompokkan per Part Nomor bukan per Jenis NG. */
 function buildNgPartParetoData(entries){
-  const cols = ['No.','Part Nomor','Total Qty NG','% dari Total','Kumulatif %'];
+  const cols = ['No.','Part Nomor','Actual Produksi (Pcs OK)','Total Qty NG','Rasio NG (%)','Kumulatif %'];
   const map = {};
-  entries.forEach(e => { if(e.part){ map[e.part] = (map[e.part]||0) + (e.qtyNg||0); } });
-  const sorted = Object.entries(map).filter(([,v]) => v > 0).sort((a,b) => b[1]-a[1]);
-  const total = sorted.reduce((s,[,v]) => s+v, 0);
+  entries.forEach(e => {
+    if(!e.part) return;
+    if(!map[e.part]) map[e.part] = { qty: 0, pcsok: 0 };
+    map[e.part].qty += (e.qtyNg || 0);
+    map[e.part].pcsok += (e.pcsok || 0);
+  });
+  const sorted = Object.entries(map).filter(([,v]) => v.qty > 0).sort((a,b) => b[1].qty - a[1].qty);
+  const totalQty = sorted.reduce((s,[,v]) => s + v.qty, 0);
   let cum = 0;
-  const rows = sorted.map(([part, qty], i) => {
-    const pct = total ? Math.round((qty/total)*1000)/10 : 0;
-    cum += qty;
-    const cumPct = total ? Math.round((cum/total)*1000)/10 : 0;
-    return [i+1, part, qty, pct, cumPct];
+  // Rasio NG (%) dihitung per part = Qty NG / (Qty NG + Actual Produksi Pcs OK) — jadi basis
+  // persentasenya adalah total produksi part itu, bukan cuma kontribusi terhadap total NG semua part.
+  // Kumulatif % tetap standar Pareto (kontribusi NG part ini + part-part di atasnya terhadap total NG).
+  const rows = sorted.map(([part, v], i) => {
+    const rasioNg = (v.qty + v.pcsok) > 0 ? (Math.round((v.qty / (v.qty + v.pcsok)) * 10000) / 100).toFixed(2) : '0.00';
+    cum += v.qty;
+    const cumPct = totalQty ? Math.round((cum / totalQty) * 1000) / 10 : 0;
+    return [i+1, part, v.pcsok, v.qty, rasioNg, cumPct];
   });
   return { cols, rows };
 }
@@ -3367,8 +3584,8 @@ function renderSummaryTables(data, isFiltered, filterFrom, filterTo){
   if(ngPartBody){
     const { rows: ngPartRows } = buildNgPartParetoData(data.ngPartEntries || []);
     ngPartBody.innerHTML = ngPartRows.length
-      ? ngPartRows.map(r => `<tr><td>${r[0]}</td><td>${escapeHtml(String(r[1]))}</td><td>${r[2]}</td><td>${r[3]}%</td><td>${r[4]}%</td></tr>`).join('')
-      : emptyRow(5);
+      ? ngPartRows.map(r => `<tr><td>${r[0]}</td><td>${escapeHtml(String(r[1]))}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}%</td><td>${r[5]}%</td></tr>`).join('')
+      : emptyRow(6);
   }
 
   const ngJenisBody = document.getElementById('tblNgJenisPareto');
