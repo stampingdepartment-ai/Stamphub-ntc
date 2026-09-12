@@ -405,6 +405,14 @@ input[type="time"]::-webkit-calendar-picker-indicator{
     position:absolute; right:10px; bottom:-6px; font-size:52px; opacity:.22;
     line-height:1; user-select:none;
   }
+  .hmi-card .hmi-trend{
+    display:inline-block; font-size:11px; font-weight:700; margin-top:2px;
+    padding:1px 7px; border-radius:20px; background:rgba(0,0,0,.22);
+  }
+  .hmi-card .hmi-trend.up{ color:#baf7c2; }
+  .hmi-card .hmi-trend.down{ color:#ffc9c2; }
+  .hmi-card.hmi-alert{ box-shadow: 0 0 0 2px #ffffff55 inset; animation: hmiAlertPulse 1.6s ease-in-out infinite; }
+  @keyframes hmiAlertPulse{ 0%,100%{ filter:brightness(1); } 50%{ filter:brightness(1.18); } }
   .hmi-red{ background: linear-gradient(135deg, #e0483e, #c93c33); }
   .hmi-orange{ background: linear-gradient(135deg, #f0a732, #d6901f); }
   .hmi-green{ background: linear-gradient(135deg, #3fae4a, #2f9139); }
@@ -839,20 +847,49 @@ input[type="time"]::-webkit-calendar-picker-indicator{
 
   <!-- ============ DASHBOARD VIEW ============ -->
   <section class="view" id="view-dashboard">
+    <div class="summary-filter-card" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px; padding:12px 16px;">
+      <div class="summary-filter-pills" id="dashboardRangePills">
+        <label class="summary-filter-pill"><input type="radio" name="dashboardRange" value="today" checked> Hari Ini</label>
+        <label class="summary-filter-pill"><input type="radio" name="dashboardRange" value="yesterday"> Kemarin</label>
+        <label class="summary-filter-pill"><input type="radio" name="dashboardRange" value="week"> 7 Hari Terakhir</label>
+      </div>
+      <div style="font-size:12px; color:var(--text-faint); display:flex; align-items:center; gap:10px;">
+        <span id="dashboardLastSync">Terakhir sync: &ndash;</span>
+        <button class="btn btn-ghost btn-sm" id="dashboardRefreshBtn" type="button">&#8635; Refresh</button>
+      </div>
+    </div>
     <div class="hmi-grid">
-  <div class="hmi-card hmi-teal"><div class="hmi-value" id="d_gsphavg_gab">0</div><div class="hmi-label">GSPH Gabungan (Hari Ini)</div><div class="hmi-icon">&#128202;</div></div>    
-  <div class="hmi-card hmi-blue"><div class="hmi-value" id="d_totalstroke">0</div><div class="hmi-label">Total Stroke (Hari Ini)</div><div class="hmi-icon">&#9881;</div></div>
-  <div class="hmi-card hmi-red"><div class="hmi-value" id="d_totalng">0</div><div class="hmi-label">Total NG (Hari Ini)</div><div class="hmi-icon">&#9888;</div></div>
-  <div class="hmi-card hmi-orange"><div class="hmi-value" id="d_totallinestop">0</div><div class="hmi-label">Total Line Stop (Jam, Hari Ini)</div><div class="hmi-icon">&#9203;</div></div>
-  <div class="hmi-card hmi-teal"><div class="hmi-value" id="d_gsphavg_red">0</div><div class="hmi-label">GSPH Shift Merah (Hari Ini)</div><div class="hmi-icon">&#128202;</div></div>
-  <div class="hmi-card hmi-teal"><div class="hmi-value" id="d_gsphavg_blue">0</div><div class="hmi-label">GSPH Shift Biru (Hari Ini)</div><div class="hmi-icon">&#128202;</div></div>
-  <div class="hmi-card hmi-purple"><div class="hmi-value" id="d_strokeavg_red">0</div><div class="hmi-label">Stroke Shift Merah (Hari Ini)</div><div class="hmi-icon">&#128257;</div></div>
-  <div class="hmi-card hmi-purple"><div class="hmi-value" id="d_strokeavg_blue">0</div><div class="hmi-label">Stroke Shift Biru (Hari Ini)</div><div class="hmi-icon">&#128257;</div></div>
-  <div class="hmi-card hmi-green"><div class="hmi-value" id="d_effavg">0%</div><div class="hmi-label">Efisiensi Rata-rata (Hari Ini)</div><div class="hmi-icon">&#9989;</div></div>
-  <div class="hmi-card hmi-orange"><div class="hmi-value" id="d_dandoriavg">0%</div><div class="hmi-label">Dandori Rata-rata (Hari Ini)</div><div class="hmi-icon">&#128736;</div></div>
-  <div class="hmi-card hmi-red"><div class="hmi-value" id="d_linestoppctavg">0%</div><div class="hmi-label">Line Stop Rata-rata (Hari Ini)</div><div class="hmi-icon">&#9940;</div></div>
-  <div class="hmi-card hmi-orange"><div class="hmi-value" id="d_stopterplanpctavg">0%</div><div class="hmi-label">% Line Stop Terplanning (Hari Ini)</div><div class="hmi-icon">&#128197;</div></div>
+  <div class="hmi-card hmi-teal"><div class="hmi-value" id="d_gsphavg_gab">0</div><span class="hmi-trend" id="d_gsphavg_gab_trend"></span><div class="hmi-label">GSPH Gabungan <span class="hmi-range-suffix">(Hari Ini)</span></div><div class="hmi-icon">&#128202;</div></div>    
+  <div class="hmi-card hmi-blue"><div class="hmi-value" id="d_totalstroke">0</div><span class="hmi-trend" id="d_totalstroke_trend"></span><div class="hmi-label">Total Stroke <span class="hmi-range-suffix">(Hari Ini)</span></div><div class="hmi-icon">&#9881;</div></div>
+  <div class="hmi-card hmi-red" id="d_totalng_card"><div class="hmi-value" id="d_totalng">0</div><span class="hmi-trend" id="d_totalng_trend"></span><div class="hmi-label">Total NG <span class="hmi-range-suffix">(Hari Ini)</span></div><div class="hmi-icon">&#9888;</div></div>
+  <div class="hmi-card hmi-orange"><div class="hmi-value" id="d_totallinestop">0</div><span class="hmi-trend" id="d_totallinestop_trend"></span><div class="hmi-label">Total Line Stop (Jam) <span class="hmi-range-suffix">(Hari Ini)</span></div><div class="hmi-icon">&#9203;</div></div>
+  <div class="hmi-card hmi-teal"><div class="hmi-value" id="d_gsphavg_red">0</div><span class="hmi-trend" id="d_gsphavg_red_trend"></span><div class="hmi-label">GSPH Shift Merah <span class="hmi-range-suffix">(Hari Ini)</span></div><div class="hmi-icon">&#128202;</div></div>
+  <div class="hmi-card hmi-teal"><div class="hmi-value" id="d_gsphavg_blue">0</div><span class="hmi-trend" id="d_gsphavg_blue_trend"></span><div class="hmi-label">GSPH Shift Biru <span class="hmi-range-suffix">(Hari Ini)</span></div><div class="hmi-icon">&#128202;</div></div>
+  <div class="hmi-card hmi-purple"><div class="hmi-value" id="d_strokeavg_red">0</div><span class="hmi-trend" id="d_strokeavg_red_trend"></span><div class="hmi-label">Stroke Shift Merah <span class="hmi-range-suffix">(Hari Ini)</span></div><div class="hmi-icon">&#128257;</div></div>
+  <div class="hmi-card hmi-purple"><div class="hmi-value" id="d_strokeavg_blue">0</div><span class="hmi-trend" id="d_strokeavg_blue_trend"></span><div class="hmi-label">Stroke Shift Biru <span class="hmi-range-suffix">(Hari Ini)</span></div><div class="hmi-icon">&#128257;</div></div>
+  <div class="hmi-card hmi-green"><div class="hmi-value" id="d_effavg">0%</div><span class="hmi-trend" id="d_effavg_trend"></span><div class="hmi-label">Efisiensi Rata-rata <span class="hmi-range-suffix">(Hari Ini)</span></div><div class="hmi-icon">&#9989;</div></div>
+  <div class="hmi-card hmi-orange"><div class="hmi-value" id="d_dandoriavg">0%</div><span class="hmi-trend" id="d_dandoriavg_trend"></span><div class="hmi-label">Dandori Rata-rata <span class="hmi-range-suffix">(Hari Ini)</span></div><div class="hmi-icon">&#128736;</div></div>
+  <div class="hmi-card hmi-red"><div class="hmi-value" id="d_linestoppctavg">0%</div><span class="hmi-trend" id="d_linestoppctavg_trend"></span><div class="hmi-label">Line Stop Rata-rata <span class="hmi-range-suffix">(Hari Ini)</span></div><div class="hmi-icon">&#9940;</div></div>
+  <div class="hmi-card hmi-orange"><div class="hmi-value" id="d_stopterplanpctavg">0%</div><span class="hmi-trend" id="d_stopterplanpctavg_trend"></span><div class="hmi-label">% Line Stop Terplanning <span class="hmi-range-suffix">(Hari Ini)</span></div><div class="hmi-icon">&#128197;</div></div>
 </div>
+
+    <div class="grid cols-2" style="margin-top:14px;">
+      <div class="chart-card" style="grid-column:1 / -1;">
+        <h3>Overview 4 Mesin <span id="dashboardOverviewRangeLabel" style="color:var(--text-faint); text-transform:none; font-weight:400;">(Hari Ini)</span></h3>
+        <div class="table-wrap summary-table">
+          <table>
+            <thead><tr><th>Mesin</th><th>GSPH</th><th>Total Stroke</th><th>Total NG</th><th>Line Stop (Jam)</th></tr></thead>
+            <tbody id="tblOverview4Mesin"><tr></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="grid cols-2" style="margin-top:14px;">
+      <div class="chart-card" style="grid-column:1 / -1;">
+        <h3>Top Problem <span id="dashboardTopProblemRangeLabel" style="color:var(--text-faint); text-transform:none; font-weight:400;">(Hari Ini)</span></h3>
+        <canvas id="chartTopProblemToday"></canvas>
+      </div>
+    </div>
 
     <div class="grid cols-2">
       <div class="chart-card"><h3>GSPH / Hari <span style="color:var(--text-faint); text-transform:none; font-weight:400;">(Gabungan Shift)</span></h3><canvas id="chartGsphHari"></canvas></div>
@@ -875,10 +912,11 @@ input[type="time"]::-webkit-calendar-picker-indicator{
 </div>
     <div class="grid cols-2" style="margin-top:14px;">
       <div class="chart-card"><h3>Breakdown Line Stop per Jenis <span style="color:var(--text-faint); text-transform:none; font-weight:400;">(Rata-rata/Hari, Bulan Ini)</span></h3><canvas id="chartLineStopPie"></canvas></div>
-      <div class="chart-card"><h3>Breakdown NG per Jenis Scrap <span style="color:var(--text-faint); text-transform:none; font-weight:400;">(Pareto, Total Bulan Ini)</span></h3><canvas id="chartNgPie"></canvas></div>
+      <div class="chart-card"><h3>Breakdown Line Stop per Jenis <span style="color:var(--text-faint); text-transform:none; font-weight:400;">(Pareto, Total Bulan Ini)</span></h3><canvas id="chartLineStopPareto"></canvas></div>
     </div>
     <div class="grid cols-2" style="margin-top:14px;">
-      <div class="chart-card" style="grid-column:1 / -1;"><h3>Breakdown NG per Part Nomor <span style="color:var(--text-faint); text-transform:none; font-weight:400;">(Pareto, Total Bulan Ini)</span></h3><canvas id="chartNgPartPie"></canvas></div>
+      <div class="chart-card"><h3>Breakdown NG per Part Nomor <span style="color:var(--text-faint); text-transform:none; font-weight:400;">(Pareto, Total Bulan Ini)</span></h3><canvas id="chartNgPartPie"></canvas></div>
+      <div class="chart-card"><h3>Breakdown NG per Jenis Scrap <span style="color:var(--text-faint); text-transform:none; font-weight:400;">(Pareto, Total Bulan Ini)</span></h3><canvas id="chartNgPie"></canvas></div>
     </div>
   </section>
 
@@ -905,6 +943,8 @@ input[type="time"]::-webkit-calendar-picker-indicator{
           <div class="summary-filter-pills">
             <label class="summary-filter-pill"><input type="checkbox" id="summaryFilterTargetGsph" checked> Summary GSPH</label>
             <label class="summary-filter-pill"><input type="checkbox" id="summaryFilterTargetProduksiItem"> Summary Produksi per Item</label>
+            <label class="summary-filter-pill"><input type="checkbox" id="summaryFilterTargetNgPart"> Ringkasan NG per Part Nomor</label>
+            <label class="summary-filter-pill"><input type="checkbox" id="summaryFilterTargetNgJenis"> Ringkasan NG per Jenis</label>
             <label class="summary-filter-pill"><input type="checkbox" id="summaryFilterTargetLineStop1600TR"> Line Stop 1600TR</label>
             <label class="summary-filter-pill"><input type="checkbox" id="summaryFilterTargetLineStop2500TR"> Line Stop 2500TR</label>
             <label class="summary-filter-pill"><input type="checkbox" id="summaryFilterTargetLineStop800BP"> Line Stop 800BP</label>
@@ -937,6 +977,34 @@ input[type="time"]::-webkit-calendar-picker-indicator{
           <table>
             <thead><tr><th>Tanggal</th><th>Shift</th><th>Part Number</th><th>Material Digunakan (pcs)</th><th>Actual Produksi (Pcs OK)</th><th>Qty Scrap NG (pcs)</th><th>Jenis NG</th><th>Rasio NG (%)</th></tr></thead>
             <tbody id="tblProduksiItemSummary"><tr></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="grid cols-2" style="margin-top:14px;">
+      <div class="chart-card" style="grid-column:1 / -1;">
+        <h3 style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+          <span>Ringkasan NG per Part Nomor (Pareto) <span id="ngPartFilterBadge" style="font-size:11px; font-weight:400; color:var(--text-faint);"></span></span>
+          <button class="btn btn-ghost btn-sm" id="exportNgPartCsvBtn">Export CSV</button>
+        </h3>
+        <div class="table-wrap summary-table">
+          <table>
+            <thead><tr><th>No.</th><th>Part Nomor</th><th>Total Qty NG</th><th>% dari Total</th><th>Kumulatif %</th></tr></thead>
+            <tbody id="tblNgPartPareto"><tr></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="grid cols-2" style="margin-top:14px;">
+      <div class="chart-card" style="grid-column:1 / -1;">
+        <h3 style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+          <span>Ringkasan NG per Jenis (Pareto) <span id="ngJenisFilterBadge" style="font-size:11px; font-weight:400; color:var(--text-faint);"></span></span>
+          <button class="btn btn-ghost btn-sm" id="exportNgJenisCsvBtn">Export CSV</button>
+        </h3>
+        <div class="table-wrap summary-table">
+          <table>
+            <thead><tr><th>No.</th><th>Jenis NG</th><th>Total Qty NG</th><th>% dari Total</th><th>Kumulatif %</th></tr></thead>
+            <tbody id="tblNgJenisPareto"><tr></tr></tbody>
           </table>
         </div>
       </div>
@@ -994,6 +1062,10 @@ input[type="time"]::-webkit-calendar-picker-indicator{
       </div>
     </div>
 
+    <div class="summary-filter-card" style="margin-top:14px; display:flex; align-items:center; gap:10px;">
+      <label for="monthlyMachineYearSelect" style="font-size:12px; color:var(--text-faint); font-weight:600; text-transform:uppercase; letter-spacing:.4px;">Tabel Bulanan &mdash; Tahun</label>
+      <select id="monthlyMachineYearSelect" style="width:auto;"></select>
+    </div>
     <div class="grid cols-2" style="margin-top:14px;">
       <div class="chart-card" style="grid-column:1 / -1;">
         <h3 style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
@@ -1076,9 +1148,11 @@ let state = {
   machine: MACHINES[0].id,
   view: 'input',
   problemCount: 0,
+  dashboardRange: 'today',
+  lastSyncAt: '',
   summaryFilter: {
     from: '', to: '',
-    targets: { gsph: true, produksiItem: false, lineStop1600TR: false, lineStop2500TR: false, lineStop800BP: false, lineStop300BP: false },
+    targets: { gsph: true, produksiItem: false, ngPart: false, ngJenis: false, lineStop1600TR: false, lineStop2500TR: false, lineStop800BP: false, lineStop300BP: false },
   },
 };
 
@@ -1439,6 +1513,11 @@ function isOperatorUser(){
 function canInputUser(){
   return isAdminUser() || isOperatorUser();
 }
+/** Export CSV hanya untuk role 'admin' dan 'user' (viewer biasa / tanpa role khusus).
+ *  Operator boleh input & lihat semua data (lihat canInputUser()), tapi TIDAK boleh export CSV. */
+function canExportCsvUser(){
+  return !isOperatorUser();
+}
 async function apiLogin(employeeId, password){
   const cfg = getConfig();
   if(!cfg.scriptUrl) throw new Error('Aplikasi belum terhubung ke Google Sheets, hubungi admin');
@@ -1509,6 +1588,13 @@ function applyRolePermissions(){
   const canInput = canInputUser(); // admin ATAU operator boleh lihat & pakai tab Input
   const inputBtn = document.querySelector('#tabs button[data-view="input"]');
   if(inputBtn) inputBtn.style.display = canInput ? '' : 'none';
+
+  // Semua tombol Export CSV (di Riwayat, Summary, Line Stop per mesin, dan tabel bulanan/mesin)
+  // disembunyikan kalau role-nya operator — operator tidak boleh export CSV sama sekali.
+  const canExport = canExportCsvUser();
+  document.querySelectorAll('button[id$="CsvBtn"]').forEach(btn => {
+    btn.style.display = canExport ? '' : 'none';
+  });
 
   if(!canInput && state.view === 'input'){
     state.view = 'riwayat';
@@ -1612,9 +1698,20 @@ async function syncFromServer(showToast){
       if(showToast) toast('Data terbaru dimuat dari Sheets');
     }
     await syncMasterFromServer();
+    state.lastSyncAt = new Date().toISOString();
+    updateDashboardLastSync();
   }catch(err){
     toast('Gagal memuat dari Sheets: ' + err.message);
   }
+}
+function updateDashboardLastSync(){
+  const el = document.getElementById('dashboardLastSync');
+  if(!el) return;
+  if(!state.lastSyncAt){ el.textContent = 'Terakhir sync: belum pernah'; return; }
+  const d = new Date(state.lastSyncAt);
+  const jam = d.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  const tgl = d.toLocaleDateString('id-ID', { day:'2-digit', month:'2-digit', year:'2-digit' });
+  el.textContent = `Terakhir sync: ${jam} (${tgl})`;
 }
 function updateSyncBanner(){
   const connected = !!getConfig().scriptUrl;
@@ -1922,7 +2019,7 @@ function resetForm(){
   document.getElementById('entryForm').reset();
   document.getElementById('entryId').value = '';
   document.getElementById('problemRows').innerHTML = '';
-  document.getElementById('f_tanggal').value = new Date().toISOString().slice(0,10);
+  document.getElementById('f_tanggal').value = localDateStr(new Date());
   document.getElementById('submitBtn').textContent = 'Simpan Laporan';
   currentPartMax = null;              // ← tambah baris ini
   refreshMasterSelects('', '');
@@ -2206,6 +2303,7 @@ async function deleteEntry(id){
 /** Dipakai bareng oleh tombol Export CSV di Riwayat (semua data) dan di Summary
  *  (data sesuai filter tanggal yang aktif), supaya kolom & formatnya selalu sama. */
 function exportEntriesToCsv(entries, filenamePrefix){
+  if(!canExportCsvUser()){ toast('Operator tidak memiliki akses untuk export CSV'); return; }
   if(entries.length === 0){ toast('Tidak ada data untuk diexport'); return; }
 
   const headers = ['Tanggal','Shift','PIC','Part Nomor','Planning Produksi','Material Digunakan',
@@ -2235,7 +2333,7 @@ function exportEntriesToCsv(entries, filenamePrefix){
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${filenamePrefix}-${state.machine}-${new Date().toISOString().slice(0,10)}.csv`;
+  a.download = `${filenamePrefix}-${state.machine}-${localDateStr(new Date())}.csv`;
   a.click();
   URL.revokeObjectURL(url);
   toast('CSV diexport');
@@ -2252,6 +2350,15 @@ document.getElementById('exportCsvBtn').addEventListener('click', () => {
 /* ---- Filter tanggal Summary: satu filter tanggal, tapi tabel mana yang kena filter
    diatur lewat checkbox "Terapkan filter tanggal ke" (bisa pilih GSPH saja, atau kombinasi
    lainnya) — tabel yang tidak dicentang tetap menampilkan semua data. ---- */
+document.querySelectorAll('#dashboardRangePills input[name="dashboardRange"]').forEach(radio => {
+  radio.addEventListener('change', (ev) => {
+    state.dashboardRange = ev.target.value;
+    renderDashboard();
+  });
+});
+document.getElementById('dashboardRefreshBtn').addEventListener('click', async () => {
+  await syncFromServer(true);
+});
 document.getElementById('summaryFilterApplyBtn').addEventListener('click', () => {
   state.summaryFilter.from = document.getElementById('summaryFilterFrom').value || '';
   state.summaryFilter.to = document.getElementById('summaryFilterTo').value || '';
@@ -2267,6 +2374,8 @@ document.getElementById('summaryFilterResetBtn').addEventListener('click', () =>
 [
   ['summaryFilterTargetGsph', 'gsph'],
   ['summaryFilterTargetProduksiItem', 'produksiItem'],
+  ['summaryFilterTargetNgPart', 'ngPart'],
+  ['summaryFilterTargetNgJenis', 'ngJenis'],
   ['summaryFilterTargetLineStop1600TR', 'lineStop1600TR'],
   ['summaryFilterTargetLineStop2500TR', 'lineStop2500TR'],
   ['summaryFilterTargetLineStop800BP', 'lineStop800BP'],
@@ -2287,6 +2396,39 @@ document.getElementById('exportGsphCsvBtn').addEventListener('click', () => {
 document.getElementById('exportProduksiItemCsvBtn').addEventListener('click', () => {
   exportSummaryTableLive('summaryFilterTargetProduksiItem', buildProduksiItemTableData, 'summary-produksi-per-item');
 });
+/** buildNgJenisParetoData()/buildNgPartParetoData() menerima entries mentah (bukan hasil
+ *  aggregateEntries()), jadi tidak lewat exportSummaryTableLive() — logikanya ditulis manual
+ *  di sini, sama untuk keduanya. */
+document.getElementById('exportNgPartCsvBtn').addEventListener('click', () => {
+  const filterFrom = document.getElementById('summaryFilterFrom').value || '';
+  const filterTo = document.getElementById('summaryFilterTo').value || '';
+  const checkbox = document.getElementById('summaryFilterTargetNgPart');
+  const hasFilter = !!(filterFrom || filterTo);
+  const applyFilter = !!(checkbox && checkbox.checked && hasFilter);
+  let entries = getEntries(state.machine).slice();
+  if(applyFilter){
+    if(filterFrom) entries = entries.filter(e => e.tanggal >= filterFrom);
+    if(filterTo) entries = entries.filter(e => e.tanggal <= filterTo);
+  }
+  const { cols, rows } = buildNgPartParetoData(entries);
+  const rangeLabel = applyFilter ? `${filterFrom || 'awal'}_sd_${filterTo || 'akhir'}` : 'semua-data';
+  exportTableToCsv(cols, rows, `summary-ng-per-part-pareto-${rangeLabel}`);
+});
+document.getElementById('exportNgJenisCsvBtn').addEventListener('click', () => {
+  const filterFrom = document.getElementById('summaryFilterFrom').value || '';
+  const filterTo = document.getElementById('summaryFilterTo').value || '';
+  const checkbox = document.getElementById('summaryFilterTargetNgJenis');
+  const hasFilter = !!(filterFrom || filterTo);
+  const applyFilter = !!(checkbox && checkbox.checked && hasFilter);
+  let entries = getEntries(state.machine).slice();
+  if(applyFilter){
+    if(filterFrom) entries = entries.filter(e => e.tanggal >= filterFrom);
+    if(filterTo) entries = entries.filter(e => e.tanggal <= filterTo);
+  }
+  const { cols, rows } = buildNgJenisParetoData(entries);
+  const rangeLabel = applyFilter ? `${filterFrom || 'awal'}_sd_${filterTo || 'akhir'}` : 'semua-data';
+  exportTableToCsv(cols, rows, `summary-ng-per-jenis-pareto-${rangeLabel}`);
+});
 [
   ['1600TR', 'summaryFilterTargetLineStop1600TR', 'exportLineStop1600TRCsvBtn'],
   ['2500TR', 'summaryFilterTargetLineStop2500TR', 'exportLineStop2500TRCsvBtn'],
@@ -2301,6 +2443,65 @@ document.getElementById('exportProduksiItemCsvBtn').addEventListener('click', ()
 /* ============================================================
    DASHBOARD VIEW
 ============================================================ */
+/** Format objek Date jadi 'YYYY-MM-DD' berdasarkan tanggal LOKAL (bukan UTC).
+ *  Date.prototype.toISOString() selalu mengonversi ke UTC dulu — untuk WIB/WITA/WIT
+ *  (semua di depan UTC), begitu jamnya di-set ke tengah malam (00:00) lalu dikonversi
+ *  ke ISO, hasilnya mundur 1 hari (mis. WIB 12 Sept 00:00 = UTC 11 Sept 17:00). Itu
+ *  sebabnya kartu Dashboard & Overview 4 Mesin "Hari Ini" tidak pernah menampilkan
+ *  data hari ini — dianggap "kemarin". Semua yang berarti "tanggal hari ini" di sisi
+ *  pengguna WAJIB pakai fungsi ini, bukan toISOString(). */
+function localDateStr(d){
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+const DASHBOARD_RANGE_LABEL = { today: '(Hari Ini)', yesterday: '(Kemarin)', week: '(7 Hari Terakhir)' };
+function resolveDashboardRange(rangeKey){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const toStr = localDateStr;
+  if(rangeKey === 'yesterday'){
+    const y = new Date(today); y.setDate(y.getDate()-1);
+    return [toStr(y)];
+  }
+  if(rangeKey === 'week'){
+    const days = [];
+    for(let i=6;i>=0;i--){ const d = new Date(today); d.setDate(d.getDate()-i); days.push(toStr(d)); }
+    return days;
+  }
+  return [toStr(today)];
+}
+function previousDashboardRange(rangeKey){
+  // Rentang pembanding: periode sebelumnya dengan panjang yang sama, untuk hitung tren naik/turun.
+  const today = new Date(); today.setHours(0,0,0,0);
+  const toStr = localDateStr;
+  if(rangeKey === 'yesterday'){
+    const y = new Date(today); y.setDate(y.getDate()-2);
+    return [toStr(y)];
+  }
+  if(rangeKey === 'week'){
+    const days = [];
+    for(let i=13;i>=7;i--){ const d = new Date(today); d.setDate(d.getDate()-i); days.push(toStr(d)); }
+    return days;
+  }
+  const y = new Date(today); y.setDate(y.getDate()-1);
+  return [toStr(y)];
+}
+/** Set badge tren (naik/turun) di sebuah kartu HMI. invertGood=true berarti "turun" itu bagus
+ *  (misalnya untuk NG, Dandori%, Line Stop% — makin kecil makin baik). */
+function setTrend(elId, current, previous, invertGood){
+  const el = document.getElementById(elId);
+  if(!el) return;
+  if(!previous || previous === 0){ el.textContent = ''; el.className = 'hmi-trend'; return; }
+  const diffPct = Math.round(((current - previous) / previous) * 100);
+  if(diffPct === 0){ el.textContent = '± 0%'; el.className = 'hmi-trend'; return; }
+  const isUp = diffPct > 0;
+  const isGood = invertGood ? !isUp : isUp;
+  el.textContent = (isUp ? '▲ ' : '▼ ') + Math.abs(diffPct) + '%';
+  el.className = 'hmi-trend ' + (isGood ? 'up' : 'down');
+}
+
 let charts = {};
 function destroyCharts(){
   Object.values(charts).forEach(c => c && c.destroy());
@@ -2311,34 +2512,57 @@ function renderDashboard(){
   const entries = getEntries(state.machine).slice().sort((a,b)=> a.tanggal.localeCompare(b.tanggal));
   const accent = currentMachine().color;
   const COLOR_RED = '#ef4444', COLOR_BLUE = '#60a5fa';
+  updateDashboardLastSync();
+  const activeRangeRadio = document.querySelector(`#dashboardRangePills input[value="${state.dashboardRange || 'today'}"]`);
+  if(activeRangeRadio) activeRangeRadio.checked = true;
 
-  /* ---- Kartu ringkasan (HMI-style) — semua untuk tanggal hari ini (berjalan/now) ---- */
-  const todayStr = new Date().toISOString().slice(0,10);
-  const todayEntries = entries.filter(e => e.tanggal === todayStr);
+  /* ---- Kartu ringkasan (HMI-style) — mengikuti pilihan rentang tanggal di toolbar Dashboard ---- */
+  const rangeKey = state.dashboardRange || 'today';
+  const rangeDays = resolveDashboardRange(rangeKey);
+  const prevRangeDays = previousDashboardRange(rangeKey);
+  const rangeSet = new Set(rangeDays);
+  const prevRangeSet = new Set(prevRangeDays);
+  const todayEntries = entries.filter(e => rangeSet.has(e.tanggal));
+  const prevRangeEntries = entries.filter(e => prevRangeSet.has(e.tanggal));
   const todayRed = todayEntries.filter(e => e.shift !== 'BLUE');
   const todayBlue = todayEntries.filter(e => e.shift === 'BLUE');
+  const prevRed = prevRangeEntries.filter(e => e.shift !== 'BLUE');
+  const prevBlue = prevRangeEntries.filter(e => e.shift === 'BLUE');
 
   const totalStroke = todayEntries.reduce((s,e)=> s+e.stroke, 0);
   const totalNg = todayEntries.reduce((s,e)=> s+e.qtyNg, 0);
   const totalLineStopMenit = todayEntries.reduce((s,e)=> s+e.computed.lineStop, 0);
   const totalLineStopJam = (totalLineStopMenit/60).toFixed(1);
+  const prevTotalStroke = prevRangeEntries.reduce((s,e)=> s+e.stroke, 0);
+  const prevTotalNg = prevRangeEntries.reduce((s,e)=> s+e.qtyNg, 0);
+  const prevTotalLineStopJam = prevRangeEntries.reduce((s,e)=> s+e.computed.lineStop, 0)/60;
 
   const gsphOf = (list) => {
     const ratios = list.filter(e => e.computed.totalJam > 0).map(e => e.stroke / e.computed.totalJam);
     return ratios.length ? Math.round(ratios.reduce((a,b)=>a+b,0)/ratios.length) : 0;
   };
   const strokeAvgOf = (list) => list.length ? Math.round(list.reduce((s,e)=> s+e.stroke,0)/list.length) : 0;
+  const pctAvgOf = (list, field) => list.length ? Math.round(list.reduce((s,e)=> s+e.computed[field],0)/list.length) : 0;
 
   const gsphAvgRed = gsphOf(todayRed);
-const gsphAvgBlue = gsphOf(todayBlue);
-const gsphAvgGab = gsphOf(todayEntries);
+  const gsphAvgBlue = gsphOf(todayBlue);
+  const gsphAvgGab = gsphOf(todayEntries);
   const strokeAvgRed = strokeAvgOf(todayRed);
   const strokeAvgBlue = strokeAvgOf(todayBlue);
+  const prevGsphAvgRed = gsphOf(prevRed);
+  const prevGsphAvgBlue = gsphOf(prevBlue);
+  const prevGsphAvgGab = gsphOf(prevRangeEntries);
+  const prevStrokeAvgRed = strokeAvgOf(prevRed);
+  const prevStrokeAvgBlue = strokeAvgOf(prevBlue);
 
-  const effAvg = todayEntries.length ? Math.round(todayEntries.reduce((s,e)=> s+e.computed.pctEfisiensi,0)/todayEntries.length) : 0;
-  const dandoriAvg = todayEntries.length ? Math.round(todayEntries.reduce((s,e)=> s+e.computed.pctDandori,0)/todayEntries.length) : 0;
-  const lineStopPctAvg = todayEntries.length ? Math.round(todayEntries.reduce((s,e)=> s+e.computed.pctLineStop,0)/todayEntries.length) : 0;
-  const stopTerplanPctAvg = todayEntries.length ? Math.round(todayEntries.reduce((s,e)=> s+e.computed.pctStopTerplan,0)/todayEntries.length) : 0;
+  const effAvg = pctAvgOf(todayEntries, 'pctEfisiensi');
+  const dandoriAvg = pctAvgOf(todayEntries, 'pctDandori');
+  const lineStopPctAvg = pctAvgOf(todayEntries, 'pctLineStop');
+  const stopTerplanPctAvg = pctAvgOf(todayEntries, 'pctStopTerplan');
+  const prevEffAvg = pctAvgOf(prevRangeEntries, 'pctEfisiensi');
+  const prevDandoriAvg = pctAvgOf(prevRangeEntries, 'pctDandori');
+  const prevLineStopPctAvg = pctAvgOf(prevRangeEntries, 'pctLineStop');
+  const prevStopTerplanPctAvg = pctAvgOf(prevRangeEntries, 'pctStopTerplan');
 
   document.getElementById('d_totalstroke').textContent = totalStroke.toLocaleString('id-ID');
   document.getElementById('d_totalng').textContent = totalNg.toLocaleString('id-ID');
@@ -2352,6 +2576,37 @@ const gsphAvgGab = gsphOf(todayEntries);
   document.getElementById('d_dandoriavg').textContent = dandoriAvg + '%';
   document.getElementById('d_linestoppctavg').textContent = lineStopPctAvg + '%';
   document.getElementById('d_stopterplanpctavg').textContent = stopTerplanPctAvg + '%';
+
+  // Label "(Hari Ini)/(Kemarin)/(7 Hari Terakhir)" di semua kartu HMI + judul Overview/Top Problem
+  const rangeLabelText = DASHBOARD_RANGE_LABEL[rangeKey] || DASHBOARD_RANGE_LABEL.today;
+  document.querySelectorAll('.hmi-range-suffix').forEach(el => { el.textContent = rangeLabelText; });
+  const overviewLbl = document.getElementById('dashboardOverviewRangeLabel');
+  if(overviewLbl) overviewLbl.textContent = rangeLabelText;
+  const topProblemLbl = document.getElementById('dashboardTopProblemRangeLabel');
+  if(topProblemLbl) topProblemLbl.textContent = rangeLabelText;
+
+  // Indikator tren (naik/turun dibanding periode sebelumnya yang sepanjang sama)
+  setTrend('d_gsphavg_gab_trend', gsphAvgGab, prevGsphAvgGab, false);
+  setTrend('d_gsphavg_red_trend', gsphAvgRed, prevGsphAvgRed, false);
+  setTrend('d_gsphavg_blue_trend', gsphAvgBlue, prevGsphAvgBlue, false);
+  setTrend('d_totalstroke_trend', totalStroke, prevTotalStroke, false);
+  setTrend('d_strokeavg_red_trend', strokeAvgRed, prevStrokeAvgRed, false);
+  setTrend('d_strokeavg_blue_trend', strokeAvgBlue, prevStrokeAvgBlue, false);
+  setTrend('d_totalng_trend', totalNg, prevTotalNg, true);
+  setTrend('d_totallinestop_trend', Number(totalLineStopJam), prevTotalLineStopJam, true);
+  setTrend('d_effavg_trend', effAvg, prevEffAvg, false);
+  setTrend('d_dandoriavg_trend', dandoriAvg, prevDandoriAvg, true);
+  setTrend('d_linestoppctavg_trend', lineStopPctAvg, prevLineStopPctAvg, true);
+  setTrend('d_stopterplanpctavg_trend', stopTerplanPctAvg, prevStopTerplanPctAvg, true);
+
+  // Kartu Total NG otomatis "menyala" (alert) kalau NG per hari di rentang ini di atas rata-rata historis mesin ini
+  const historyDailyNg = {};
+  entries.forEach(e => { historyDailyNg[e.tanggal] = (historyDailyNg[e.tanggal]||0) + e.qtyNg; });
+  const historyNgValues = Object.values(historyDailyNg);
+  const historyNgAvgPerDay = historyNgValues.length ? historyNgValues.reduce((a,b)=>a+b,0)/historyNgValues.length : 0;
+  const rangeNgAvgPerDay = rangeDays.length ? totalNg / rangeDays.length : 0;
+  const ngCard = document.getElementById('d_totalng_card');
+  if(ngCard) ngCard.classList.toggle('hmi-alert', historyNgAvgPerDay > 0 && rangeNgAvgPerDay > historyNgAvgPerDay * 1.15);
 
   /* ---- Agregasi per hari, gabungan & per shift (21 hari terakhir yang ada datanya) ---- */
   const emptyShift = () => ({ strokeSum:0, ngSum:0, lineStopSum:0, totalJamSum:0 });
@@ -2456,7 +2711,7 @@ const groupedOpts = {
   plugins:{ legend:{ display:true, labels:{ color:tickColor, font:{size:10}, boxWidth:10 } } },
   scales:{
     x:{ grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} } },
-    y:{ grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} }, suggestedMax: NILAI_TARGET_GSPH + 150 }
+    y:{ grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} }, min: 0, max: NILAI_TARGET_GSPH + 150 }
   }
 };
   const yamazumiOpts = {
@@ -2593,6 +2848,35 @@ const groupedOpts = {
     ]},
     options: lineStopShiftOpts
   });
+  const pctCompareOpts = {
+    responsive:true,
+    plugins:{ legend:{ display:true, labels:{ color:tickColor, font:{size:11}, boxWidth:12 } } },
+    layout: { padding: { top: 29 } },
+    scales:{
+      x:{ stacked:true, grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} } },
+      y:{ stacked:true, grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} }, min:0, max:100 }
+    }
+  };
+  const pluginPctTargetLine = {
+    id: 'pctTargetLine',
+    afterDraw: (chart) => {
+      const { ctx, chartArea: { left, right }, scales: { y } } = chart;
+      const yValue = y.getPixelForValue(100);
+      ctx.save();
+      ctx.strokeStyle = '#f4b740';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      ctx.moveTo(left, yValue);
+      ctx.lineTo(right, yValue);
+      ctx.stroke();
+      ctx.fillStyle = '#f4b740';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText('Target: 100%', right - 5, yValue - 5);
+      ctx.restore();
+    }
+  };
   charts.pctCompare = new Chart(document.getElementById('chartPctCompare'), {
     type:'bar',
     data:{ labels: monthLabels, datasets:[
@@ -2600,7 +2884,8 @@ const groupedOpts = {
       { label:'% Dandori', data: monthDays.map(d=> hasDay(d) ? avgOf(byDay[d].dandoriList) : null), backgroundColor:'#f4b740', borderRadius:2 },
       { label:'% Line Stop', data: monthDays.map(d=> hasDay(d) ? avgOf(byDay[d].lineStopPctList) : null), backgroundColor:'#ef4444', borderRadius:2 },
     ]},
-    options: yamazumiOpts
+    options: pctCompareOpts,
+    plugins: [pluginPctTargetLine]
   });
 
   /* ---- Pie: breakdown Line Stop per jenis, dijumlah 1 bulan lalu dirata-rata per hari ---- */
@@ -2631,6 +2916,40 @@ const groupedOpts = {
     options: pieOpts
   });
 
+  /* ---- Pareto: breakdown Line Stop per jenis (Machine/Dies/Finger/Misgrip/Material/Others),
+   *  total 1 bulan dalam menit (batang + kumulatif %). "Terencana" TIDAK diikutkan di sini
+   *  karena bukan bagian dari kategori problem (Machine/Dies/Finger/Misgrip/Material/Others). ---- */
+  const lineStopCatMap = {};
+  getProblemCategories().forEach(c => lineStopCatMap[c] = 0);
+  monthEntries.forEach(e => {
+    (e.problems||[]).forEach(p => { lineStopCatMap[p.kategori] = (lineStopCatMap[p.kategori]||0) + (p.menit||0); });
+  });
+  const lineStopCatSorted = Object.entries(lineStopCatMap)
+    .map(([k,v]) => [LINE_STOP_CATEGORY_LABEL[k] || k, v])
+    .filter(([,v]) => v > 0)
+    .sort((a,b)=> b[1]-a[1]);
+  const lineStopCatTotal = lineStopCatSorted.reduce((s,[,v])=> s+v, 0);
+  let cumLineStop = 0;
+  const lineStopCatCumPct = lineStopCatSorted.map(([,v]) => { cumLineStop += v; return lineStopCatTotal ? Math.round((cumLineStop/lineStopCatTotal)*100) : 0; });
+  charts.lineStopPareto = new Chart(document.getElementById('chartLineStopPareto'), {
+    data:{
+      labels: lineStopCatSorted.map(([k])=>k),
+      datasets:[
+        { type:'bar', label:'Total Waktu (menit)', data: lineStopCatSorted.map(([,v])=>v), backgroundColor:'#ef4444', borderRadius:3, order:2, yAxisID:'y' },
+        { type:'line', label:'Kumulatif %', data: lineStopCatCumPct, borderColor:'#f4b740', backgroundColor:'transparent', tension:.2, pointRadius:3, order:1, yAxisID:'y1' },
+      ]
+    },
+    options: {
+      responsive:true,
+      plugins:{ legend:{ display:true, labels:{ color:tickColor, font:{size:11}, boxWidth:12 } } },
+      scales:{
+        x:{ grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} } },
+        y:{ position:'left', beginAtZero:true, grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} } },
+        y1:{ position:'right', beginAtZero:true, max:100, grid:{ drawOnChartArea:false }, ticks:{ color:tickColor, font:{size:10}, callback:v=>v+'%' } }
+      }
+    }
+  });
+
   /* ---- Pareto: breakdown NG per jenis scrap, total 1 bulan (batang + kumulatif %) ---- */
   const scrapMap = {};
   monthEntries.forEach(e => { if(e.jenisScrap){ scrapMap[e.jenisScrap] = (scrapMap[e.jenisScrap]||0) + e.qtyNg; } });
@@ -2642,7 +2961,7 @@ const groupedOpts = {
     data:{
       labels: scrapSorted.map(([k])=>k),
       datasets:[
-        { type:'bar', label:'Total NG', data: scrapSorted.map(([,v])=>v), backgroundColor:'#ef4444', borderRadius:3, order:2, yAxisID:'y' },
+        { type:'bar', label:'Total NG', data: scrapSorted.map(([,v])=>v), backgroundColor: COLOR_BLUE, borderRadius:3, order:2, yAxisID:'y' },
         { type:'line', label:'Kumulatif %', data: scrapCumPct, borderColor:'#f4b740', backgroundColor:'transparent', tension:.2, pointRadius:3, order:1, yAxisID:'y1' },
       ]
     },
@@ -2683,6 +3002,48 @@ const groupedOpts = {
     }
   });
 
+  /* ---- Overview 4 Mesin sekaligus (tidak tergantung mesin yang aktif di sidebar) ---- */
+  const overviewBody = document.getElementById('tblOverview4Mesin');
+  if(overviewBody){
+    const rows = MACHINES.map(m => {
+      const mEntries = getEntries(m.id).filter(e => rangeSet.has(e.tanggal));
+      const mStroke = mEntries.reduce((s,e)=> s+e.stroke, 0);
+      const mNg = mEntries.reduce((s,e)=> s+e.qtyNg, 0);
+      const mLineStopJam = (mEntries.reduce((s,e)=> s+e.computed.lineStop, 0)/60).toFixed(1);
+      const mGsph = gsphOf(mEntries);
+      const isActive = m.id === state.machine;
+      return `<tr${isActive ? ' style="background:var(--panel-2); font-weight:700;"' : ''}><td>${escapeHtml(m.label)}${isActive ? ' <span style="font-size:10px; color:var(--text-faint); font-weight:400;">(aktif)</span>' : ''}</td><td>${mGsph.toLocaleString('id-ID')}</td><td>${mStroke.toLocaleString('id-ID')}</td><td>${mNg.toLocaleString('id-ID')}</td><td>${mLineStopJam}</td></tr>`;
+    });
+    overviewBody.innerHTML = rows.join('');
+  }
+
+  /* ---- Top Problem (Line Stop) untuk rentang yang dipilih, mesin yang sedang aktif ---- */
+  const topProblemMap = {};
+  todayEntries.forEach(e => {
+    (e.problems||[]).forEach(p => {
+      if(!p.menit) return;
+      const key = (p.keterangan && p.keterangan.trim()) || (LINE_STOP_CATEGORY_LABEL[p.kategori] || p.kategori || 'Lainnya');
+      topProblemMap[key] = (topProblemMap[key]||0) + p.menit;
+    });
+  });
+  const topProblemSorted = Object.entries(topProblemMap).sort((a,b)=> b[1]-a[1]).slice(0,8);
+  charts.topProblem = new Chart(document.getElementById('chartTopProblemToday'), {
+    type: 'bar',
+    data: {
+      labels: topProblemSorted.length ? topProblemSorted.map(([k])=>k) : ['Belum ada problem'],
+      datasets: [{ label: 'Total Waktu (menit)', data: topProblemSorted.length ? topProblemSorted.map(([,v])=>v) : [0], backgroundColor:'#ef4444', borderRadius:4 }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive:true,
+      plugins:{ legend:{ display:false } },
+      scales:{
+        x:{ beginAtZero:true, grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} } },
+        y:{ grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} } }
+      }
+    }
+  });
+
 }
 
 /** Format tanggal ISO (YYYY-MM-DD) jadi DD/MM/YY. Dipakai bareng oleh renderSummary()
@@ -2696,6 +3057,7 @@ function fmtTglDDMMYY(d){
 
 /** Export generik: cocok untuk data tabel apa saja (array kolom + array baris nilai). */
 function exportTableToCsv(cols, rows, filenamePrefix, machineLabel){
+  if(!canExportCsvUser()){ toast('Operator tidak memiliki akses untuk export CSV'); return; }
   if(!rows || rows.length === 0){ toast('Tidak ada data untuk diexport'); return; }
   const csv = [cols, ...rows].map(r =>
     r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')
@@ -2704,7 +3066,7 @@ function exportTableToCsv(cols, rows, filenamePrefix, machineLabel){
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${filenamePrefix}-${machineLabel || state.machine}-${new Date().toISOString().slice(0,10)}.csv`;
+  a.download = `${filenamePrefix}-${machineLabel || state.machine}-${localDateStr(new Date())}.csv`;
   a.click();
   URL.revokeObjectURL(url);
   toast('CSV diexport');
@@ -2833,6 +3195,46 @@ function buildLineStopTableData(entries){
   return { cols, rows: rows.map((r,i) => [i+1, r[1], r[2], r[3], r[4], r[5], r[6]]) };
 }
 
+/** Ringkasan Pareto NG per Jenis: total Qty NG per jenis scrap, diurutkan dari yang terbesar,
+ *  dilengkapi % kontribusi tiap jenis dan % kumulatif (standar analisa Pareto 80/20). */
+/** Palet warna yang sama dipakai untuk chart-chart bertipe pie/kategori di Dashboard
+ *  (lihat pieColors di renderDashboard) — dipakai lagi di sini supaya warna tiap "Jenis NG"
+ *  di tabel Ringkasan konsisten dengan warna kategorinya di chart pie. */
+const PARETO_PIE_COLORS = ['#2dd4bf','#ec4899','#ef4444','#a855f7','#f4b740','#4ade80','#60a5fa','#f97316'];
+
+function buildNgJenisParetoData(entries){
+  const cols = ['No.','Jenis NG','Total Qty NG','% dari Total','Kumulatif %'];
+  const map = {};
+  entries.forEach(e => { if(e.jenisScrap){ map[e.jenisScrap] = (map[e.jenisScrap]||0) + (e.qtyNg||0); } });
+  const sorted = Object.entries(map).filter(([,v]) => v > 0).sort((a,b) => b[1]-a[1]);
+  const total = sorted.reduce((s,[,v]) => s+v, 0);
+  let cum = 0;
+  const rows = sorted.map(([jenis, qty], i) => {
+    const pct = total ? Math.round((qty/total)*1000)/10 : 0;
+    cum += qty;
+    const cumPct = total ? Math.round((cum/total)*1000)/10 : 0;
+    return [i+1, jenis, qty, pct, cumPct];
+  });
+  return { cols, rows };
+}
+
+/** Sama seperti buildNgJenisParetoData(), tapi dikelompokkan per Part Nomor bukan per Jenis NG. */
+function buildNgPartParetoData(entries){
+  const cols = ['No.','Part Nomor','Total Qty NG','% dari Total','Kumulatif %'];
+  const map = {};
+  entries.forEach(e => { if(e.part){ map[e.part] = (map[e.part]||0) + (e.qtyNg||0); } });
+  const sorted = Object.entries(map).filter(([,v]) => v > 0).sort((a,b) => b[1]-a[1]);
+  const total = sorted.reduce((s,[,v]) => s+v, 0);
+  let cum = 0;
+  const rows = sorted.map(([part, qty], i) => {
+    const pct = total ? Math.round((qty/total)*1000)/10 : 0;
+    cum += qty;
+    const cumPct = total ? Math.round((cum/total)*1000)/10 : 0;
+    return [i+1, part, qty, pct, cumPct];
+  });
+  return { cols, rows };
+}
+
 /** Export CSV per tabel Summary, MEMBACA LANGSUNG tanggal & checkbox saat tombol diklik —
  *  jadi selalu akurat walau belum sempat klik "Terapkan" / tabelnya belum di-render ulang. */
 function exportSummaryTableLive(checkboxId, buildFn, filenamePrefix){
@@ -2910,10 +3312,14 @@ function renderSummary(){
   renderSummaryTables({
     gsph: (targets.gsph && hasFilter) ? aggFiltered : aggAll,
     produksiItem: (targets.produksiItem && hasFilter) ? aggFiltered : aggAll,
+    ngPartEntries: (targets.ngPart && hasFilter) ? filteredEntries : allEntries,
+    ngJenisEntries: (targets.ngJenis && hasFilter) ? filteredEntries : allEntries,
     lineStop: lineStopEntries,
   }, {
     gsph: targets.gsph && hasFilter,
     produksiItem: targets.produksiItem && hasFilter,
+    ngPart: targets.ngPart && hasFilter,
+    ngJenis: targets.ngJenis && hasFilter,
     lineStop: lineStopIsFiltered,
   }, filterFrom, filterTo);
 
@@ -2928,6 +3334,8 @@ function renderSummaryTables(data, isFiltered, filterFrom, filterTo){
   };
   setBadge('gsphFilterBadge', isFiltered.gsph);
   setBadge('produksiItemFilterBadge', isFiltered.produksiItem);
+  setBadge('ngPartFilterBadge', isFiltered.ngPart);
+  setBadge('ngJenisFilterBadge', isFiltered.ngJenis);
 
   const gsphHead = document.getElementById('tblGsphSummaryHead');
   const gsphBody = document.getElementById('tblGsphSummary');
@@ -2955,31 +3363,96 @@ function renderSummaryTables(data, isFiltered, filterFrom, filterTo){
       : emptyRow(gsphCols.length);
   }
 
+  const ngPartBody = document.getElementById('tblNgPartPareto');
+  if(ngPartBody){
+    const { rows: ngPartRows } = buildNgPartParetoData(data.ngPartEntries || []);
+    ngPartBody.innerHTML = ngPartRows.length
+      ? ngPartRows.map(r => `<tr><td>${r[0]}</td><td>${escapeHtml(String(r[1]))}</td><td>${r[2]}</td><td>${r[3]}%</td><td>${r[4]}%</td></tr>`).join('')
+      : emptyRow(5);
+  }
+
+  const ngJenisBody = document.getElementById('tblNgJenisPareto');
+  if(ngJenisBody){
+    const { rows: ngJenisRows } = buildNgJenisParetoData(data.ngJenisEntries || []);
+    // Tiap "Jenis NG" dikasih warna dari palet yang sama dengan chart pie (PARETO_PIE_COLORS),
+    // diurutkan sesuai urutan Pareto (terbanyak dulu) — jadi warnanya konsisten dengan chart.
+    ngJenisBody.innerHTML = ngJenisRows.length
+      ? ngJenisRows.map((r, i) => {
+          const color = PARETO_PIE_COLORS[i % PARETO_PIE_COLORS.length];
+          return `<tr><td>${r[0]}</td><td style="color:${color}; font-weight:600;">${escapeHtml(String(r[1]))}</td><td>${r[2]}</td><td>${r[3]}%</td><td>${r[4]}%</td></tr>`;
+        }).join('')
+      : emptyRow(5);
+  }
+
   const { rows: produksiItemRows } = buildProduksiItemTableData(data.produksiItem);
-  produksiItemBody.innerHTML = produksiItemRows.length
-    ? produksiItemRows.map(r => `<tr><td>${r[0]}</td><td>${escapeHtml(String(r[1]))}</td><td>${escapeHtml(String(r[2]))}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td>${escapeHtml(String(r[6]))}</td><td>${r[7]}%</td></tr>`).join('')
-    : emptyRow(8);
+  if(produksiItemRows.length){
+    const totalMaterial = produksiItemRows.reduce((s,r) => s + (r[3]||0), 0);
+    const totalPcsOk = produksiItemRows.reduce((s,r) => s + (r[4]||0), 0);
+    const totalNg = produksiItemRows.reduce((s,r) => s + (r[5]||0), 0);
+    const totalRasioNg = (totalPcsOk + totalNg) > 0 ? Math.round((totalNg / (totalPcsOk + totalNg)) * 1000) / 10 : 0;
+    const totalRowHtml = `<tr style="font-weight:700; background:var(--panel-2);"><td colspan="3" style="text-align:right;">Total</td><td>${totalMaterial}</td><td>${totalPcsOk}</td><td>${totalNg}</td><td>-</td><td>${totalRasioNg}%</td></tr>`;
+    produksiItemBody.innerHTML = produksiItemRows.map(r => `<tr><td>${r[0]}</td><td>${escapeHtml(String(r[1]))}</td><td>${escapeHtml(String(r[2]))}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td>${escapeHtml(String(r[6]))}</td><td>${r[7]}%</td></tr>`).join('') + totalRowHtml;
+  } else {
+    produksiItemBody.innerHTML = emptyRow(8);
+  }
 
   ['1600TR','2500TR','800BP','300BP'].forEach(mId => {
     setBadge(`lineStop${mId}FilterBadge`, isFiltered.lineStop[mId]);
     const body = document.getElementById(`tblLineStop${mId}`);
     if(!body) return;
     const { rows } = buildLineStopTableData(data.lineStop[mId]);
-    body.innerHTML = rows.length
-      ? rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${escapeHtml(String(r[2]))}</td><td>${r[3]}</td><td>${r[4]}</td><td>${escapeHtml(String(r[5]))}</td><td>${escapeHtml(String(r[6]))}</td></tr>`).join('')
-      : emptyRow(7);
+    if(rows.length){
+      const totalMenit = rows.reduce((s,r) => s + (r[4]||0), 0);
+      const totalRowHtml = `<tr style="font-weight:700; background:var(--panel-2);"><td colspan="4" style="text-align:right;">Total</td><td>${totalMenit}</td><td colspan="2"></td></tr>`;
+      body.innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${escapeHtml(String(r[2]))}</td><td>${r[3]}</td><td>${r[4]}</td><td>${escapeHtml(String(r[5]))}</td><td>${escapeHtml(String(r[6]))}</td></tr>`).join('') + totalRowHtml;
+    } else {
+      body.innerHTML = emptyRow(7);
+    }
   });
 }
 
 /** Nama bulan pendek untuk header tabel bulanan (index 0 = Januari). */
 const NAMA_BULAN_PENDEK = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
 
+/** Tahun yang sedang ditampilkan di 4 tabel bulanan (GSPH/Stroke/LineStop/NG). Default: tahun berjalan,
+ *  tapi bisa diganti manual lewat dropdown #monthlyMachineYearSelect supaya data tahun lalu tetap bisa dilihat. */
+let monthlyMachineYear = new Date().getFullYear();
+
+/** Kumpulan tahun yang punya data di salah satu dari 4 mesin, ditambah tahun berjalan (walau belum ada
+ *  datanya) supaya selalu bisa dipilih. Dipakai untuk mengisi opsi dropdown tahun. */
+function getAvailableMonthlyYears(){
+  const years = new Set([new Date().getFullYear()]);
+  ['1600TR','2500TR','800BP','300BP'].forEach(mId => {
+    getEntries(mId).forEach(e => {
+      if(!e.tanggal) return;
+      const y = parseInt(e.tanggal.split('-')[0], 10);
+      if(!isNaN(y)) years.add(y);
+    });
+  });
+  return Array.from(years).sort((a,b) => b - a);
+}
+
+/** Isi ulang opsi dropdown tahun kalau daftar tahunnya berubah (mis. entri baru masuk di tahun baru),
+ *  tapi tidak reset pilihan user kalau daftarnya masih sama persis. Dipanggil tiap kali tabel bulanan
+ *  dirender ulang. */
+function ensureMonthlyMachineYearOptions(){
+  const sel = document.getElementById('monthlyMachineYearSelect');
+  if(!sel) return;
+  const years = getAvailableMonthlyYears();
+  const existing = Array.from(sel.options).map(o => parseInt(o.value, 10));
+  const same = existing.length === years.length && existing.every((v,i) => v === years[i]);
+  if(!same){
+    sel.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+  }
+  sel.value = String(monthlyMachineYear);
+}
+
 /** Hitung agregasi bulanan (GSPH, Stroke, Line Stop, NG) untuk KE-4 mesin sekaligus,
  *  dibatasi hanya entri di tahun berjalan (state.summaryFilter tidak berlaku di sini —
  *  4 tabel ini memang selalu per tahun berjalan, bukan ikut filter tanggal Summary).
  *  Saat tahun berganti, otomatis kosong lagi karena belum ada entri di tahun baru itu. */
-function buildMonthlyMachineData(){
-  const currentYear = new Date().getFullYear();
+function buildMonthlyMachineData(year){
+  const currentYear = year || monthlyMachineYear;
   const machineIds = ['1600TR','2500TR','800BP','300BP'];
   const data = {};
 
@@ -3012,7 +3485,8 @@ function buildMonthlyMachineData(){
  *  yang belum berjalan/belum ada datanya tidak menurunkan rata-rata secara tidak wajar. Nama mesin
  *  di kolom pertama diwarnai sama seperti warna aksen mesin itu di halaman Entry Data. */
 function renderMonthlyMachineTables(){
-  const { currentYear, machineIds, data } = buildMonthlyMachineData();
+  ensureMonthlyMachineYearOptions();
+  const { currentYear, machineIds, data } = buildMonthlyMachineData(monthlyMachineYear);
 
   document.getElementById('gsphBulanMesinTitle').textContent = `GSPH/BULAN/MESIN - TAHUN ${currentYear}`;
   document.getElementById('strokeBulanMesinTitle').textContent = `STROKE/BULAN/MESIN - TAHUN ${currentYear}`;
@@ -3063,7 +3537,10 @@ function renderMonthlyMachineTables(){
     const validVals = monthlyGsph.filter(v => v !== null);
     const rataRata = validVals.length ? Math.round(validVals.reduce((a,b) => a+b, 0) / validVals.length) : null;
     const achievement = (rataRata !== null && target > 0) ? Math.round((rataRata / target) * 1000) / 10 : null;
-    return `<tr>${machineNameCell(mId)}<td>${target}</td>${cells}<td>${rataRata === null ? '-' : rataRata}</td><td>${achievement === null ? '-' : achievement + '%'}</td></tr>`;
+    const achievementCell = achievement === null
+      ? '<td>-</td>'
+      : `<td style="color:${achievement >= 100 ? 'var(--good)' : 'var(--danger)'}; font-weight:700;">${achievement}%</td>`;
+    return `<tr>${machineNameCell(mId)}<td>${target}</td>${cells}<td>${rataRata === null ? '-' : rataRata}</td>${achievementCell}</tr>`;
   }).join('');
 
   const buildPlainRow = (mId, getVal) => {
@@ -3118,6 +3595,10 @@ function exportMonthlyMachineCsv(metric, filenamePrefix){
 }
 
 document.getElementById('exportGsphBulanMesinCsvBtn').addEventListener('click', () => exportMonthlyMachineCsv('gsph', 'GSPH-per-Bulan-Mesin'));
+document.getElementById('monthlyMachineYearSelect').addEventListener('change', (e) => {
+  monthlyMachineYear = parseInt(e.target.value, 10) || monthlyMachineYear;
+  renderMonthlyMachineTables();
+});
 document.getElementById('exportStrokeBulanMesinCsvBtn').addEventListener('click', () => exportMonthlyMachineCsv('stroke', 'Stroke-per-Bulan-Mesin'));
 document.getElementById('exportLineStopBulanMesinCsvBtn').addEventListener('click', () => exportMonthlyMachineCsv('lineStop', 'LineStop-per-Bulan-Mesin'));
 document.getElementById('exportNgBulanMesinCsvBtn').addEventListener('click', () => exportMonthlyMachineCsv('ng', 'NG-per-Bulan-Mesin'));
