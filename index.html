@@ -1806,28 +1806,16 @@ async function apiList(){
   if(!data.ok) throw new Error(data.error || 'Gagal memuat data dari Sheets');
   return data.entries;
 }
-/** Kalau server balas "sesi sudah berakhir/tidak valid" (token kadaluarsa 8 jam, atau
- *  sudah di-logout dari device lain), langsung paksa balik ke layar login dengan pesan
- *  yang jelas - daripada user berulang kali gagal simpan tanpa tahu kenapa. */
-function handleAuthFailureIfNeeded(message){
-  if(/sesi.*(berakhir|tidak valid)/i.test(message || '')){
-    clearLoginSession();
-    showLogin();
-    toast('Sesi login sudah berakhir, silakan login kembali.');
-    return true;
-  }
-  return false;
-}
 async function apiSave(entry, machineId){
   const cfg = getConfig();
   if(!cfg.scriptUrl) return;
   const res = await fetch(cfg.scriptUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // menghindari CORS preflight di Apps Script
-    body: JSON.stringify({ action: 'save', machine: machineId || state.machine, entry, token: getAuthToken() })
+    body: JSON.stringify({ action: 'save', machine: machineId || state.machine, entry })
   });
   const data = await res.json();
-  if(!data.ok){ handleAuthFailureIfNeeded(data.error); throw new Error(data.error || 'Gagal menyimpan ke Sheets'); }
+  if(!data.ok) throw new Error(data.error || 'Gagal menyimpan ke Sheets');
 }
 async function apiDelete(id){
   const cfg = getConfig();
@@ -1835,10 +1823,10 @@ async function apiDelete(id){
   const res = await fetch(cfg.scriptUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action: 'delete', machine: state.machine, id, token: getAuthToken() })
+    body: JSON.stringify({ action: 'delete', machine: state.machine, id })
   });
   const data = await res.json();
-  if(!data.ok){ handleAuthFailureIfNeeded(data.error); throw new Error(data.error || 'Gagal menghapus di Sheets'); }
+  if(!data.ok) throw new Error(data.error || 'Gagal menghapus di Sheets');
 }
 async function apiGetMaster(){
   const cfg = getConfig();
@@ -1854,24 +1842,10 @@ async function apiAddMaster(type, value, max){
   const res = await fetch(cfg.scriptUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action: 'addMaster', machine: state.machine, type, value, max, token: getAuthToken() })
+    body: JSON.stringify({ action: 'addMaster', machine: state.machine, type, value, max })
   });
   const data = await res.json();
-  if(!data.ok){ handleAuthFailureIfNeeded(data.error); throw new Error(data.error || 'Gagal menyimpan ke daftar master di Sheets'); }
-}
-/** Cabut token di server (Sessions sheet) saat user klik "Keluar", supaya token lama
- *  benar-benar tidak bisa dipakai lagi walau belum sampai 8 jam masa berlakunya.
- *  Best-effort: kalau gagal (mis. offline), tetap lanjut logout di sisi browser. */
-async function apiLogout(token){
-  const cfg = getConfig();
-  if(!cfg.scriptUrl || !token) return;
-  try{
-    await fetch(cfg.scriptUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'logout', token })
-    });
-  }catch(e){ /* diamkan - logout lokal tetap jalan meski request ini gagal */ }
+  if(!data.ok) throw new Error(data.error || 'Gagal menyimpan ke daftar master di Sheets');
 }
 /* ============================================================
    LOGIN
@@ -1882,13 +1856,6 @@ function getLoginSession(){
 }
 function setLoginSession(session){ localStorage.setItem(LOGIN_KEY, JSON.stringify(session)); }
 function clearLoginSession(){ localStorage.removeItem(LOGIN_KEY); }
-/** Token sesi dari login terakhir, dikirim di tiap request save/delete/addMaster supaya
- *  server (Code.gs) bisa cek ulang siapa & role apa yang minta - bukan cuma dipercaya dari
- *  frontend. Kosong kalau belum login / sesi hilang (mis. localStorage di-clear manual). */
-function getAuthToken(){
-  const session = getLoginSession();
-  return (session && session.token) || '';
-}
 function isAdminUser(){
   const session = getLoginSession();
   return !!(session && session.role === 'admin');
@@ -1919,7 +1886,7 @@ async function apiLogin(employeeId, password){
   });
   const data = await res.json();
   if(!data.ok) throw new Error(data.error || 'Login gagal');
-  return data; // { ok:true, employeeId, name, role, token, expiresAt }
+  return data; // { ok:true, employeeId, name }
 }
 
 function showLogin(){
@@ -2038,7 +2005,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   btn.textContent = 'Memproses...';
   try{
     const result = await apiLogin(id, pw);
-    setLoginSession({ employeeId: result.employeeId || id, name: result.name || id, role: result.role || 'user', fotoUrl: result.fotoUrl || '', token: result.token || '' });
+    setLoginSession({ employeeId: result.employeeId || id, name: result.name || id, role: result.role || 'user', fotoUrl: result.fotoUrl || '' });
     document.getElementById('loginForm').reset();
     showApp();
   }catch(err){
@@ -2060,9 +2027,12 @@ document.getElementById('togglePassword').addEventListener('click', function() {
   this.innerHTML = isPassword ? EYE_OPEN : EYE_CLOSED;
 });
 
+document.getElementById('logoutBtn')?.addEventListener('click', () => {   // ← baris 1007 (sudah ada)
+  clearLoginSession();
+  showLogin();
+});
+
 document.getElementById('logoutBtn')?.addEventListener('click', () => {
-  const token = getAuthToken();
-  apiLogout(token); // best-effort, tidak menunggu - tetap logout lokal walau ini gagal/lambat
   clearLoginSession();
   showLogin();
 });
