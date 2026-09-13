@@ -610,10 +610,13 @@ input[type="time"]::-webkit-calendar-picker-indicator{
 /* ---------- Cetak laporan harian (print-friendly) ---------- */
 .print-only{ display:none; }
 @media print{
+  @page{ size: A4 landscape; margin: 8mm; }
+  html, body{ width:100%; }
   body *{ visibility:hidden; }
   .print-only, .print-only *{ visibility:visible; }
-  .print-only{ position:absolute; top:0; left:0; width:100%; padding:20px; color:#000; background:#fff; }
-  .print-only table, .print-only th, .print-only td{ border-color:#000 !important; color:#000 !important; }
+  .print-only{ display:block; position:absolute; top:0; left:0; width:100%; padding:0; color:#000; background:#fff; }
+  .print-only table{ table-layout:fixed; width:100%; }
+  .print-only th, .print-only td{ border-color:#000 !important; color:#000 !important; word-break:break-word; overflow-wrap:break-word; }
 }
 </style>
 </head>
@@ -2917,27 +2920,49 @@ function printDailyReport(){
   let html = `
     <h2 style="text-align:center; margin-bottom:4px;">LAPORAN PRODUKSI HARIAN</h2>
     <p style="text-align:center; margin-top:0;">Mesin: <b>${escapeHtml(mesinLabel)}</b> &mdash; Periode: ${escapeHtml(rangeLabel)}</p>
-    <table style="width:100%; border-collapse:collapse; font-size:11px; margin-top:14px;" border="1" cellpadding="4">
+    <table style="width:100%; border-collapse:collapse; font-size:6.5px; margin-top:10px;" border="1" cellpadding="2">
       <thead>
         <tr>
-          <th>Tanggal</th><th>Shift</th><th>PIC</th><th>Part Nomor</th><th>Planning</th>
-          <th>Stroke</th><th>Pcs OK</th><th>Qty NG</th><th>GSPH</th><th>Status</th><th>Jam</th>
+          <th>Tanggal</th><th>Waktu Input</th><th>Shift</th><th>PIC</th><th>Part Nomor</th>
+          <th>Planning</th><th>Material</th><th>Stroke</th><th>Pcs OK</th>
+          <th>Jenis Scrap</th><th>Qty NG</th><th>SPM</th><th>SPM Kajuhekin</th>
+          <th>GSPH</th><th>Status</th><th>Jam Mulai</th><th>Jam Selesai</th>
+          <th>Total (Jam)</th><th>Total (Menit)</th><th>Dandori</th><th>%Dandori</th>
+          <th>Stop Terplan</th><th>Menit Terplan</th><th>%Stop Terplan</th>
+          <th>Total Line Stop</th><th>%Line Stop</th><th>Waktu Efektif</th><th>%Efisiensi</th>
         </tr>
       </thead>
       <tbody>`;
   entries.forEach(e => {
     html += `<tr>
       <td>${e.tanggal}</td>
+      <td>${formatDateTimeValue(e.waktuInput)}</td>
       <td>${e.shift === 'BLUE' ? 'Biru' : 'Merah'}</td>
       <td>${escapeHtml(e.pic)}</td>
       <td>${escapeHtml(e.part)}</td>
       <td>${e.planning}</td>
+      <td>${e.material}</td>
       <td>${e.stroke}</td>
       <td>${e.pcsok}</td>
+      <td>${escapeHtml(e.jenisScrap || '-')}</td>
       <td>${e.qtyNg}</td>
+      <td>${e.spm}</td>
+      <td>${e.spmKajuhekin}</td>
       <td>${e.gsph ?? 0}</td>
       <td>${escapeHtml(e.statusLabel || '-')}</td>
-      <td>${e.jamMulai || '-'} - ${e.jamSelesai || '-'}</td>
+      <td>${e.jamMulai || '-'}</td>
+      <td>${e.jamSelesai || '-'}</td>
+      <td>${e.computed.totalJam}</td>
+      <td>${e.computed.totalMenit}</td>
+      <td>${e.dandori}</td>
+      <td>${e.computed.pctDandori}%</td>
+      <td>${escapeHtml(e.stopTerplanJenis || '-')}</td>
+      <td>${e.stopTerplanMenit}</td>
+      <td>${e.computed.pctStopTerplan}%</td>
+      <td>${e.computed.lineStop}</td>
+      <td>${e.computed.pctLineStop}%</td>
+      <td>${e.computed.efektif}</td>
+      <td>${e.computed.pctEfisiensi}%</td>
     </tr>`;
   });
   html += `</tbody></table>
