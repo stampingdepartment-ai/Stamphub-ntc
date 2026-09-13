@@ -606,9 +606,19 @@ input[type="time"]::-webkit-calendar-picker-indicator{
   background: #ef4444;
   color: #ffffff;
 }
+
+/* ---------- Cetak laporan harian (print-friendly) ---------- */
+.print-only{ display:none; }
+@media print{
+  body *{ visibility:hidden; }
+  .print-only, .print-only *{ visibility:visible; }
+  .print-only{ position:absolute; top:0; left:0; width:100%; padding:20px; color:#000; background:#fff; }
+  .print-only table, .print-only th, .print-only td{ border-color:#000 !important; color:#000 !important; }
+}
 </style>
 </head>
 <body>
+<div id="printableReport" class="print-only"></div>
 
 <div class="login-overlay" id="loginOverlay">
   <div class="wave-wrap">
@@ -810,6 +820,7 @@ input[type="time"]::-webkit-calendar-picker-indicator{
         <span id="loginInfoName"></span>
         <button class="btn btn-ghost btn-sm" id="logoutBtn" type="button">Keluar</button>
       </div>
+      <button class="btn btn-ghost btn-sm" id="syncStatusBtn" type="button" style="display:none; color:var(--warn); border-color:var(--warn);">⚠ 0 belum sync</button>
       <button class="btn btn-ghost btn-sm" id="settingsBtn" type="button">⚙ Hubungkan Sheets</button>
     </div>
   </aside>
@@ -825,10 +836,39 @@ input[type="time"]::-webkit-calendar-picker-indicator{
 <div class="modal-overlay" id="confirmSaveModal">
   <div class="modal">
     <h3>Simpan Laporan?</h3>
-    <p class="modal-desc">Anda akan menyimpan laporan ini. Pastikan semua data yang diisi sudah benar sebelum melanjutkan.</p>
+    <p class="modal-desc" id="confirmSaveDesc">Anda akan menyimpan laporan ini. Pastikan semua data yang diisi sudah benar sebelum melanjutkan.</p>
     <div class="modal-actions">
       <button class="btn btn-ghost" id="cancelSaveBtn" type="button">Periksa Lagi</button>
       <button class="btn btn-primary" id="confirmSaveBtn" type="button">Ya, Simpan</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="holidayModal">
+  <div class="modal" style="max-width:460px;">
+    <h3>Kelola Hari Libur</h3>
+    <p class="modal-desc">Sabtu &amp; Minggu otomatis dianggap libur (tidak dicek). Tambahkan tanggal lain di sini kalau ada libur nasional/cuti bersama, supaya tidak kena peringatan "belum lapor" di Dashboard.</p>
+    <div style="display:flex; gap:8px; margin-bottom:12px;">
+      <input type="date" id="holidayDateInput" style="flex:1;">
+      <button class="btn btn-primary btn-sm" id="addHolidayBtn" type="button">Tambah</button>
+    </div>
+    <div id="holidayList" style="max-height:220px; overflow-y:auto; font-size:13px;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="closeHolidayModalBtn" type="button">Tutup</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="syncStatusModal">
+  <div class="modal" style="max-width:560px;">
+    <h3>Status Sinkronisasi</h3>
+    <p class="modal-desc">Laporan yang tersimpan lokal tapi belum berhasil dikirim ke Google Sheets. Kalau device/browser ini diganti sebelum berhasil sync ulang, laporan di bawah ini bisa hilang.</p>
+    <div id="unsyncedList" style="max-height:260px; overflow-y:auto; margin:12px 0; font-size:13px;"></div>
+    <div class="modal-status" id="syncStatusMsg"></div>
+    <div class="modal-actions" style="justify-content:space-between;">
+      <button class="btn btn-ghost" id="backupJsonBtn" type="button">⬇ Backup Semua Data (JSON)</button>
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-ghost" id="closeSyncStatusBtn" type="button">Tutup</button>
+        <button class="btn btn-primary" id="resyncAllBtn" type="button">🔄 Sync Ulang Semua</button>
+      </div>
     </div>
   </div>
 </div>
@@ -990,7 +1030,20 @@ input[type="time"]::-webkit-calendar-picker-indicator{
         <label style="font-size:12px; color:var(--text-faint);">Sampai</label>
         <input type="date" id="filterDateTo">
       </div>
+      <div class="field-group">
+        <label style="font-size:12px; color:var(--text-faint);">Cari (Part Nomor / PIC)</label>
+        <input type="text" id="riwayatSearchInput" placeholder="Ketik untuk mencari..." style="min-width:180px;">
+      </div>
+      <div class="field-group">
+        <label style="font-size:12px; color:var(--text-faint);">Shift</label>
+        <select id="riwayatShiftSelect" style="width:auto;">
+          <option value="">Semua Shift</option>
+          <option value="RED">Merah</option>
+          <option value="BLUE">Biru</option>
+        </select>
+      </div>
       <button class="btn btn-ghost btn-sm" id="clearFilterBtn">Tampilkan Semua</button>
+      <button class="btn btn-ghost btn-sm" id="printReportBtn">🖨 Cetak Laporan</button>
       <button class="btn btn-ghost btn-sm" id="exportCsvBtn" style="margin-left:auto;">Export CSV</button>
     </div>
     <div class="table-wrap">
@@ -1013,10 +1066,16 @@ input[type="time"]::-webkit-calendar-picker-indicator{
       <div class="big">📋</div>
       Belum ada data untuk mesin ini.<br>Mulai input laporan di tab "Input".
     </div>
+    <div class="table-toolbar" id="riwayatPaginationBar" style="justify-content:center; gap:14px; margin-top:12px;">
+      <button class="btn btn-ghost btn-sm" id="riwayatPrevBtn">‹ Sebelumnya</button>
+      <span id="riwayatPageInfo" style="font-size:13px; color:var(--text-faint);"></span>
+      <button class="btn btn-ghost btn-sm" id="riwayatNextBtn">Berikutnya ›</button>
+    </div>
   </section>
 
   <!-- ============ DASHBOARD VIEW ============ -->
   <section class="view" id="view-dashboard">
+    <div id="earlyWarningBanner" style="display:none; background:color-mix(in srgb, var(--danger) 14%, transparent); border:1px solid color-mix(in srgb, var(--danger) 40%, transparent); color:var(--danger); border-radius:10px; padding:12px 16px; margin-bottom:14px; font-size:13px; font-weight:600;"></div>
     <div class="summary-filter-card" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px; padding:12px 16px;">
       <div class="summary-filter-pills" id="dashboardRangePills">
         <label class="summary-filter-pill"><input type="radio" name="dashboardRange" value="today" checked> Hari Ini</label>
@@ -1065,11 +1124,17 @@ input[type="time"]::-webkit-calendar-picker-indicator{
           <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#9ca3af; margin-right:5px;"></span>Material</span>
           <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#eab308; margin-right:5px;"></span>Others</span>
         </div>
-        <canvas id="chartTopProblemToday"></canvas>
+        <div style="position:relative; height:280px; overflow:hidden;">
+          <canvas id="chartTopProblemToday" style="max-height:280px;"></canvas>
+          <div id="topProblemEmptyMsg" style="display:none; position:absolute; inset:0; align-items:center; justify-content:center; flex-direction:column; gap:6px; color:var(--text-faint); font-size:13px;">
+            <span style="font-size:28px; opacity:.5;">&#127882;</span>
+            Belum ada problem tercatat
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="grid cols-2">
+    <div class="grid cols-2" style="margin-top:14px;">
       <div class="chart-card"><h3>GSPH / Hari <span style="color:var(--text-faint); text-transform:none; font-weight:400;">(Gabungan Shift)</span></h3><canvas id="chartGsphHari"></canvas></div>
       <div class="chart-card"><h3>GSPH / Shift <span style="color:var(--text-faint); text-transform:none; font-weight:400;">(Merah vs Biru)</span></h3><canvas id="chartGsphShift"></canvas></div>
     </div>
@@ -1392,6 +1457,7 @@ jenisScrap: e.jenisScrap || '',
     })) : [],
     waktuInput: e.waktuInput || '',
     konfirmasi: !!e.konfirmasi,
+    synced: e.synced === undefined ? true : !!e.synced,
   };
 }
 function getEntries(machineId){
@@ -1403,6 +1469,116 @@ function setEntries(machineId, entries){
   db[machineId] = entries;
   saveDB(db);
 }
+
+/** Tandai satu entry sebagai sudah/belum sync ke Sheets, lalu simpan ulang ke localStorage. */
+function markEntrySynced(machineId, entryId, syncedValue){
+  const entries = getEntries(machineId);
+  const idx = entries.findIndex(x => x.id === entryId);
+  if(idx < 0) return;
+  entries[idx].synced = syncedValue;
+  setEntries(machineId, entries);
+}
+
+/** Kumpulkan semua laporan yang belum ke-sync dari KE-4 mesin sekaligus (bukan cuma mesin aktif),
+ *  supaya operator sadar kalau ada laporan "nyangkut" di mesin lain juga. */
+function getAllUnsyncedEntries(){
+  const result = [];
+  MACHINES.forEach(m => {
+    getEntries(m.id).forEach(e => {
+      if(!e.synced) result.push({ machineId: m.id, machineLabel: m.label, entry: e });
+    });
+  });
+  return result;
+}
+
+/** Update badge peringatan di sidebar-footer: sembunyi kalau semua sudah sync,
+ *  tampil merah/warning dengan jumlahnya kalau ada yang belum. */
+function renderSyncStatusBadge(){
+  const btn = document.getElementById('syncStatusBtn');
+  if(!btn) return;
+  const unsynced = getAllUnsyncedEntries();
+  if(unsynced.length === 0){
+    btn.style.display = 'none';
+  } else {
+    btn.style.display = '';
+    btn.textContent = `⚠ ${unsynced.length} belum sync`;
+  }
+}
+
+function renderUnsyncedList(){
+  const unsynced = getAllUnsyncedEntries();
+  const listEl = document.getElementById('unsyncedList');
+  if(!listEl) return;
+  listEl.innerHTML = unsynced.length
+    ? unsynced.map(u => `
+        <div style="padding:8px 10px; border:1px solid var(--border); border-radius:8px; margin-bottom:6px; display:flex; justify-content:space-between; gap:10px;">
+          <div>
+            <b>${escapeHtml(u.machineLabel)}</b> &mdash; ${u.entry.tanggal}, Shift ${u.entry.shift === 'BLUE' ? 'Biru' : 'Merah'}<br>
+            <span style="color:var(--text-faint);">Part: ${escapeHtml(u.entry.part || '-')} &middot; PIC: ${escapeHtml(u.entry.pic || '-')}</span>
+          </div>
+        </div>`).join('')
+    : '<p style="color:var(--good); text-align:center; padding:20px 0;">✅ Semua laporan sudah tersinkron ke Google Sheets.</p>';
+}
+
+/** Coba kirim ulang SEMUA laporan yang belum sync (dari ke-4 mesin) ke Google Sheets satu per satu. */
+async function resyncAllPending(){
+  const cfg = getConfig();
+  const msgEl = document.getElementById('syncStatusMsg');
+  if(!cfg.scriptUrl){
+    msgEl.textContent = 'Belum terhubung ke Google Sheets — hubungkan dulu lewat menu "Hubungkan Sheets".';
+    return;
+  }
+  const unsynced = getAllUnsyncedEntries();
+  if(unsynced.length === 0){
+    msgEl.textContent = 'Tidak ada laporan yang perlu di-sync ulang.';
+    return;
+  }
+  msgEl.textContent = `Menyinkronkan ${unsynced.length} laporan...`;
+  let berhasil = 0, gagal = 0;
+  for(const u of unsynced){
+    try{
+      await apiSave(u.entry, u.machineId);
+      markEntrySynced(u.machineId, u.entry.id, true);
+      berhasil++;
+    }catch(err){
+      gagal++;
+    }
+  }
+  msgEl.textContent = `Selesai: ${berhasil} berhasil di-sync, ${gagal} masih gagal.`;
+  renderUnsyncedList();
+  renderSyncStatusBadge();
+  if(state.view === 'riwayat') renderRiwayat();
+}
+
+/** Backup lengkap SEMUA data (4 mesin + master data) jadi satu file JSON mentah,
+ *  untuk jaga-jaga di luar export CSV yang sifatnya per-tabel/ringkasan. */
+function backupAllDataToJson(){
+  const backup = { exportedAt: new Date().toISOString(), machines: {}, master: getMasterAll() };
+  MACHINES.forEach(m => {
+    backup.machines[m.id] = getEntries(m.id);
+  });
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `backup-laporan-produksi-${localDateStr(new Date())}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Backup JSON berhasil diunduh.');
+}
+
+document.getElementById('syncStatusBtn').addEventListener('click', () => {
+  renderUnsyncedList();
+  document.getElementById('syncStatusMsg').textContent = '';
+  document.getElementById('syncStatusModal').classList.add('show');
+});
+document.getElementById('closeSyncStatusBtn').addEventListener('click', () => {
+  document.getElementById('syncStatusModal').classList.remove('show');
+});
+document.getElementById('resyncAllBtn').addEventListener('click', resyncAllPending);
+document.getElementById('backupJsonBtn').addEventListener('click', backupAllDataToJson);
 
 /* ============================================================
    MASTER DATA (daftar Nama/PIC & Part Nomor per mesin, untuk dropdown)
@@ -1626,13 +1802,13 @@ async function apiList(){
   if(!data.ok) throw new Error(data.error || 'Gagal memuat data dari Sheets');
   return data.entries;
 }
-async function apiSave(entry){
+async function apiSave(entry, machineId){
   const cfg = getConfig();
   if(!cfg.scriptUrl) return;
   const res = await fetch(cfg.scriptUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // menghindari CORS preflight di Apps Script
-    body: JSON.stringify({ action: 'save', machine: state.machine, entry })
+    body: JSON.stringify({ action: 'save', machine: machineId || state.machine, entry })
   });
   const data = await res.json();
   if(!data.ok) throw new Error(data.error || 'Gagal menyimpan ke Sheets');
@@ -1800,7 +1976,17 @@ function checkLoginGate(){
     showApp();
   } else {
     showLogin();
+    warmupServer_();
   }
+}
+
+/** Kirim request "pemanasan" ke Apps Script di background begitu layar login tampil,
+ *  supaya cold-start-nya kepakai duluan sementara operator masih ngetik ID/password —
+ *  hasilnya tidak dipakai sama sekali, jadi gagal pun tidak masalah (diabaikan diam-diam). */
+function warmupServer_(){
+  const cfg = getConfig();
+  if(!cfg.scriptUrl) return;
+  fetch(cfg.scriptUrl + '?action=ping').catch(() => {});
 }
 
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
@@ -2230,8 +2416,57 @@ function statusFor(entry){
   return computeAutoStatus(entry.stroke, entry.planning);
 }
 
+/** Cek duplikat (Tanggal+Shift+Part yang sama) & lonjakan Actual Produksi vs Planning.
+ *  Ini WARNING saja (user tetap boleh lanjut simpan) — untuk kasus yang genuinely valid,
+ *  misal memang sengaja re-entry koreksi, atau overproduksi yang memang terjadi. */
+function getEntryWarnings(draft){
+  const warnings = [];
+  const existing = getEntries(state.machine);
+  const dup = existing.find(x =>
+    x.id !== draft.id &&
+    x.tanggal === draft.tanggal &&
+    x.shift === draft.shift &&
+    x.part === draft.part
+  );
+  if(dup){
+    warnings.push(`Sudah ada laporan lain dengan <b>Tanggal, Shift, dan Part Nomor yang SAMA</b> (diinput ${formatDateTimeValue(dup.waktuInput) || 'sebelumnya'}, oleh ${escapeHtml(dup.pic || '-')}). Pastikan ini bukan input dobel/tidak sengaja submit 2x.`);
+  }
+  if(draft.planning > 0 && draft.stroke > draft.planning * 1.5){
+    const pct = Math.round((draft.stroke / draft.planning) * 100);
+    warnings.push(`Actual Produksi (Stroke) = <b>${draft.stroke}</b> pcs, jauh di atas Planning (<b>${draft.planning}</b> pcs) — sekitar ${pct}% dari planning. Cek lagi, jangan sampai salah ketik angka.`);
+  }
+  return warnings;
+}
+
 document.getElementById('entryForm').addEventListener('submit', (e) => {
   e.preventDefault();
+
+  const computed = recomputeStrip();
+
+  // BLOK KERAS: durasi 0 menit hampir selalu berarti Jam Mulai/Jam Selesai salah input
+  // (misal untuk shift siang, jam selesai diisi lebih awal dari jam mulai).
+  const jamMulaiVal = document.getElementById('f_jammulai').value;
+  const jamSelesaiVal = document.getElementById('f_jamselesai').value;
+  if(jamMulaiVal && jamSelesaiVal && computed.totalMenit === 0){
+    toast('Total durasi produksi = 0 menit. Cek lagi Jam Mulai & Jam Selesai, sepertinya salah input.');
+    return;
+  }
+
+  const draft = {
+    id: document.getElementById('entryId').value || null,
+    tanggal: document.getElementById('f_tanggal').value,
+    shift: document.getElementById('f_shift').value,
+    part: document.getElementById('f_part').value.trim(),
+    planning: Number(document.getElementById('f_planning').value) || 0,
+    stroke: Number(document.getElementById('f_stroke').value) || 0,
+  };
+  const warnings = getEntryWarnings(draft);
+  const descEl = document.getElementById('confirmSaveDesc');
+  const baseText = 'Anda akan menyimpan laporan ini. Pastikan semua data yang diisi sudah benar sebelum melanjutkan.';
+  descEl.innerHTML = warnings.length
+    ? baseText + warnings.map(w => `<br><br><span style="color:var(--warn); font-weight:600;">⚠️ ${w}</span>`).join('')
+    : baseText;
+
   document.getElementById('confirmSaveModal').classList.add('show');
 });
 
@@ -2277,6 +2512,7 @@ jenisScrap: document.getElementById('f_jenisscrap').value.trim(),
     problems: getProblemRows(),
     konfirmasi: document.getElementById('f_konfirmasi').checked,
     computed,
+    synced: false, // ditandai belum sync dulu; diupdate jadi true kalau apiSave() berhasil di bawah
   };
   entry.statusLabel = statusFor(entry);
 
@@ -2286,11 +2522,13 @@ jenisScrap: document.getElementById('f_jenisscrap').value.trim(),
   setEntries(state.machine, entries);
   resetForm();
   renderAll();
+  renderSyncStatusBadge();
 
   if(getConfig().scriptUrl){
     toast('Menyimpan ke Google Sheets...');
     try{
       await apiSave(entry);
+      markEntrySynced(state.machine, entry.id, true);
       toast(idx >= 0 ? 'Laporan diperbarui di Sheets' : 'Laporan tersimpan ke Sheets');
     }catch(err){
       toast('Tersimpan lokal, tapi gagal sync: ' + err.message);
@@ -2298,6 +2536,7 @@ jenisScrap: document.getElementById('f_jenisscrap').value.trim(),
   } else {
     toast(idx >= 0 ? 'Laporan diperbarui (lokal)' : 'Laporan tersimpan (lokal)');
   }
+  renderSyncStatusBadge();
 });
 
 /* ============================================================
@@ -2305,17 +2544,45 @@ jenisScrap: document.getElementById('f_jenisscrap').value.trim(),
 ============================================================ */
 let filterDateFrom = null;
 let filterDateTo = null;
+let riwayatSearchText = '';
+let riwayatFilterShift = '';
+let riwayatCurrentPage = 1;
+const RIWAYAT_PAGE_SIZE = 50;
+
 document.getElementById('filterDateFrom').addEventListener('change', (e) => {
   filterDateFrom = e.target.value || null;
+  riwayatCurrentPage = 1;
   renderRiwayat();
 });
 document.getElementById('filterDateTo').addEventListener('change', (e) => {
   filterDateTo = e.target.value || null;
+  riwayatCurrentPage = 1;
   renderRiwayat();
+});
+document.getElementById('riwayatSearchInput').addEventListener('input', (e) => {
+  riwayatSearchText = e.target.value.trim();
+  riwayatCurrentPage = 1;
+  renderRiwayat();
+});
+document.getElementById('riwayatShiftSelect').addEventListener('change', (e) => {
+  riwayatFilterShift = e.target.value;
+  riwayatCurrentPage = 1;
+  renderRiwayat();
+});
+document.getElementById('riwayatPrevBtn').addEventListener('click', () => {
+  if(riwayatCurrentPage > 1){ riwayatCurrentPage--; renderRiwayat(); }
+});
+document.getElementById('riwayatNextBtn').addEventListener('click', () => {
+  riwayatCurrentPage++; renderRiwayat();
 });
 document.getElementById('clearFilterBtn').addEventListener('click', () => {
   filterDateFrom = null;
   filterDateTo = null;
+  riwayatSearchText = '';
+  riwayatFilterShift = '';
+  riwayatCurrentPage = 1;
+  document.getElementById('riwayatSearchInput').value = '';
+  document.getElementById('riwayatShiftSelect').value = '';
   document.getElementById('filterDateFrom').value = '';
   document.getElementById('filterDateTo').value = '';
   renderRiwayat();
@@ -2369,16 +2636,42 @@ function renderRiwayat(){
   let entries = getEntries(state.machine).slice().sort((a,b)=> b.tanggal.localeCompare(a.tanggal));
   if(filterDateFrom) entries = entries.filter(e => e.tanggal >= filterDateFrom);
   if(filterDateTo) entries = entries.filter(e => e.tanggal <= filterDateTo);
+  if(riwayatFilterShift) entries = entries.filter(e => e.shift === riwayatFilterShift);
+  if(riwayatSearchText){
+    const q = riwayatSearchText.toLowerCase();
+    entries = entries.filter(e => (e.part||'').toLowerCase().includes(q) || (e.pic||'').toLowerCase().includes(q));
+  }
 
   const body = document.getElementById('riwayatBody');
   const empty = document.getElementById('riwayatEmpty');
+  const pagBar = document.getElementById('riwayatPaginationBar');
   body.innerHTML = '';
 
-  if(entries.length === 0){ empty.style.display = 'block'; return; }
+  if(entries.length === 0){
+    empty.style.display = 'block';
+    if(pagBar) pagBar.style.display = 'none';
+    return;
+  }
   empty.style.display = 'none';
 
+  // Pagination: potong entries (yang sudah difilter) jadi per-halaman, supaya tabel
+  // tidak me-render ribuan baris sekaligus kalau datanya sudah banyak.
+  const totalEntries = entries.length;
+  const totalPages = Math.max(1, Math.ceil(totalEntries / RIWAYAT_PAGE_SIZE));
+  if(riwayatCurrentPage > totalPages) riwayatCurrentPage = totalPages;
+  if(riwayatCurrentPage < 1) riwayatCurrentPage = 1;
+  const startIdx = (riwayatCurrentPage - 1) * RIWAYAT_PAGE_SIZE;
+  const pageEntries = entries.slice(startIdx, startIdx + RIWAYAT_PAGE_SIZE);
+
+  if(pagBar){
+    pagBar.style.display = totalPages > 1 ? 'flex' : 'none';
+    document.getElementById('riwayatPageInfo').textContent = `Halaman ${riwayatCurrentPage} dari ${totalPages} (${totalEntries} laporan)`;
+    document.getElementById('riwayatPrevBtn').disabled = riwayatCurrentPage <= 1;
+    document.getElementById('riwayatNextBtn').disabled = riwayatCurrentPage >= totalPages;
+  }
+
   const cats = getProblemCategories();
-  entries.forEach(entry => {
+  pageEntries.forEach(entry => {
     const tr = document.createElement('tr');
     const catData = aggregateProblemsForDisplay(entry.problems, cats);
     const catTds = catData.map(d => `<td>${escapeHtml(d.ket)}</td><td>${d.menit}</td>`).join('');
@@ -2528,9 +2821,71 @@ document.getElementById('exportCsvBtn').addEventListener('click', () => {
   let entries = getEntries(state.machine).slice().sort((a,b)=> a.tanggal.localeCompare(b.tanggal));
   if(filterDateFrom) entries = entries.filter(e => e.tanggal >= filterDateFrom);
   if(filterDateTo) entries = entries.filter(e => e.tanggal <= filterDateTo);
+  if(riwayatFilterShift) entries = entries.filter(e => e.shift === riwayatFilterShift);
+  if(riwayatSearchText){
+    const q = riwayatSearchText.toLowerCase();
+    entries = entries.filter(e => (e.part||'').toLowerCase().includes(q) || (e.pic||'').toLowerCase().includes(q));
+  }
   const rangeLabel = (filterDateFrom || filterDateTo) ? `${filterDateFrom || 'awal'}_sd_${filterDateTo || 'akhir'}` : 'semua-data';
   exportEntriesToCsv(entries, `laporan-produksi-${rangeLabel}`);
 });
+
+/** Cetak laporan harian (print-friendly) untuk entri yang SEDANG TAMPIL (ikut semua filter aktif:
+ *  tanggal, shift, pencarian) — untuk ditandatangani/print fisik. */
+function printDailyReport(){
+  let entries = getEntries(state.machine).slice().sort((a,b)=> a.tanggal.localeCompare(b.tanggal));
+  if(filterDateFrom) entries = entries.filter(e => e.tanggal >= filterDateFrom);
+  if(filterDateTo) entries = entries.filter(e => e.tanggal <= filterDateTo);
+  if(riwayatFilterShift) entries = entries.filter(e => e.shift === riwayatFilterShift);
+  if(riwayatSearchText){
+    const q = riwayatSearchText.toLowerCase();
+    entries = entries.filter(e => (e.part||'').toLowerCase().includes(q) || (e.pic||'').toLowerCase().includes(q));
+  }
+
+  if(!entries.length){ toast('Tidak ada data untuk dicetak pada filter saat ini.'); return; }
+
+  const mesinLabel = currentMachine() ? currentMachine().label : state.machine;
+  const rangeLabel = (filterDateFrom || filterDateTo)
+    ? `${filterDateFrom || '...'} s/d ${filterDateTo || '...'}`
+    : 'Semua Tanggal';
+
+  let html = `
+    <h2 style="text-align:center; margin-bottom:4px;">LAPORAN PRODUKSI HARIAN</h2>
+    <p style="text-align:center; margin-top:0;">Mesin: <b>${escapeHtml(mesinLabel)}</b> &mdash; Periode: ${escapeHtml(rangeLabel)}</p>
+    <table style="width:100%; border-collapse:collapse; font-size:11px; margin-top:14px;" border="1" cellpadding="4">
+      <thead>
+        <tr>
+          <th>Tanggal</th><th>Shift</th><th>PIC</th><th>Part Nomor</th><th>Planning</th>
+          <th>Stroke</th><th>Pcs OK</th><th>Qty NG</th><th>GSPH</th><th>Status</th><th>Jam</th>
+        </tr>
+      </thead>
+      <tbody>`;
+  entries.forEach(e => {
+    html += `<tr>
+      <td>${e.tanggal}</td>
+      <td>${e.shift === 'BLUE' ? 'Biru' : 'Merah'}</td>
+      <td>${escapeHtml(e.pic)}</td>
+      <td>${escapeHtml(e.part)}</td>
+      <td>${e.planning}</td>
+      <td>${e.stroke}</td>
+      <td>${e.pcsok}</td>
+      <td>${e.qtyNg}</td>
+      <td>${e.gsph ?? 0}</td>
+      <td>${escapeHtml(e.statusLabel || '-')}</td>
+      <td>${e.jamMulai || '-'} - ${e.jamSelesai || '-'}</td>
+    </tr>`;
+  });
+  html += `</tbody></table>
+    <div style="display:flex; justify-content:space-between; margin-top:60px; font-size:12px;">
+      <div style="text-align:center; width:200px;">Dibuat oleh,<br><br><br><br>( _________________ )</div>
+      <div style="text-align:center; width:200px;">Diperiksa oleh,<br><br><br><br>( _________________ )</div>
+      <div style="text-align:center; width:200px;">Disetujui oleh,<br><br><br><br>( _________________ )</div>
+    </div>`;
+
+  document.getElementById('printableReport').innerHTML = html;
+  window.print();
+}
+document.getElementById('printReportBtn').addEventListener('click', printDailyReport);
 
 /* ---- Filter tanggal Summary: satu filter tanggal, tapi tabel mana yang kena filter
    diatur lewat checkbox "Terapkan filter tanggal ke" (bisa pilih GSPH saja, atau kombinasi
@@ -2693,7 +3048,118 @@ function destroyCharts(){
   charts = {};
 }
 
+/** Klasifikasi WS1 (siang, mulai 06:00-17:59) / WS2 (malam, mulai 18:00-05:59) dari jam mulai,
+ *  sama seperti logika di Apps Script auto-email — supaya konsisten di seluruh sistem. */
+function classifyShiftWindow_(jamMulaiStr){
+  if(!jamMulaiStr) return null;
+  const h = parseInt(jamMulaiStr.split(':')[0], 10);
+  if(isNaN(h)) return null;
+  return (h >= 6 && h < 18) ? 'siang' : 'malam';
+}
+
+/* ---------- Hari libur (dikecualikan dari early warning) ----------
+ * Default: Sabtu & Minggu selalu dianggap libur (tidak ada produksi).
+ * Bisa ditambah tanggal libur lain (misal libur nasional) lewat modal "Kelola Hari Libur". */
+const HOLIDAY_KEY = 'laporanProduksiHolidays_v1';
+function getHolidayDates(){
+  try{ return JSON.parse(localStorage.getItem(HOLIDAY_KEY)) || []; }catch(e){ return []; }
+}
+function setHolidayDates(list){ localStorage.setItem(HOLIDAY_KEY, JSON.stringify(list)); }
+
+function renderHolidayList(){
+  const listEl = document.getElementById('holidayList');
+  if(!listEl) return;
+  const dates = getHolidayDates().slice().sort();
+  listEl.innerHTML = dates.length
+    ? dates.map(d => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 10px; border:1px solid var(--border); border-radius:8px; margin-bottom:6px;">
+          <span>${d}</span>
+          <button class="btn btn-danger btn-sm" data-removeholiday="${d}" type="button">Hapus</button>
+        </div>`).join('')
+    : '<p style="color:var(--text-faint); text-align:center; padding:12px 0;">Belum ada tanggal libur tambahan.</p>';
+  listEl.querySelectorAll('[data-removeholiday]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const updated = getHolidayDates().filter(d => d !== btn.dataset.removeholiday);
+      setHolidayDates(updated);
+      renderHolidayList();
+      renderEarlyWarningBanner();
+    });
+  });
+}
+
+function openHolidayModal(){
+  renderHolidayList();
+  document.getElementById('holidayModal').classList.add('show');
+}
+document.getElementById('closeHolidayModalBtn').addEventListener('click', () => {
+  document.getElementById('holidayModal').classList.remove('show');
+});
+document.getElementById('addHolidayBtn').addEventListener('click', () => {
+  const val = document.getElementById('holidayDateInput').value;
+  if(!val) return;
+  const dates = getHolidayDates();
+  if(!dates.includes(val)){
+    dates.push(val);
+    setHolidayDates(dates);
+  }
+  document.getElementById('holidayDateInput').value = '';
+  renderHolidayList();
+  renderEarlyWarningBanner();
+});
+function isNonProductionDay(dateStr){
+  if(!dateStr) return false;
+  const d = new Date(dateStr + 'T00:00:00');
+  if(isNaN(d.getTime())) return false;
+  const day = d.getDay(); // 0=Minggu, 6=Sabtu
+  if(day === 0 || day === 6) return true;
+  return getHolidayDates().includes(dateStr);
+}
+
+/** Cek tiap mesin: kalau sudah lewat jam tertentu tapi belum ada laporan untuk shift yang
+ *  seharusnya sudah selesai hari ini, tampilkan warning di banner atas Dashboard. Batas waktu
+ *  dikasih toleransi (bukan pas jam selesai normal) supaya tidak riweuh warning terlalu dini. */
+function renderEarlyWarningBanner(){
+  const banner = document.getElementById('earlyWarningBanner');
+  if(!banner) return;
+
+  const now = new Date();
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const todayStr = localDateStr(now);
+  const yesterdayStr = localDateStr(new Date(now.getTime() - 86400000));
+  const SIANG_DEADLINE = 17 * 60;      // 17:00 (toleransi 30 menit dari jam selesai normal 16:30)
+  const MALAM_DEADLINE = 7 * 60 + 30;  // 07:30 (toleransi dari jam selesai normal 05:05, sebelum OT 07:00 usai)
+
+  const warnings = [];
+  MACHINES.forEach(m => {
+    if(!isNonProductionDay(todayStr)){
+      const entriesToday = getEntries(m.id).filter(e => e.tanggal === todayStr);
+      const hasSiangToday = entriesToday.some(e => classifyShiftWindow_(e.jamMulai) === 'siang');
+      if(nowMinutes >= SIANG_DEADLINE && !hasSiangToday){
+        warnings.push(`${m.label}: belum ada laporan Shift Siang hari ini`);
+      }
+    }
+
+    if(!isNonProductionDay(yesterdayStr)){
+      const entriesYesterday = getEntries(m.id).filter(e => e.tanggal === yesterdayStr);
+      const hasMalamYesterday = entriesYesterday.some(e => classifyShiftWindow_(e.jamMulai) === 'malam');
+      if(nowMinutes >= MALAM_DEADLINE && !hasMalamYesterday){
+        warnings.push(`${m.label}: belum ada laporan Shift Malam (mulai tadi malam)`);
+      }
+    }
+  });
+
+  if(warnings.length === 0){
+    banner.style.display = 'none';
+    return;
+  }
+  banner.style.display = 'block';
+  banner.innerHTML = '⚠️ ' + warnings.join(' &nbsp;|&nbsp; ') + ' &nbsp; <button class="btn btn-ghost btn-sm" id="manageHolidaysBtnInline" type="button" style="margin-left:8px;">📅 Kelola Hari Libur</button>';
+  const holidayBtn = document.getElementById('manageHolidaysBtnInline');
+  if(holidayBtn) holidayBtn.addEventListener('click', openHolidayModal);
+}
+
 function renderDashboard(){
+  renderEarlyWarningBanner();
   const entries = getEntries(state.machine).slice().sort((a,b)=> a.tanggal.localeCompare(b.tanggal));
   const accent = currentMachine().color;
   const COLOR_RED = '#ef4444', COLOR_BLUE = '#60a5fa';
@@ -3233,25 +3699,38 @@ const groupedOpts = {
     });
   });
   const topProblemSorted = Object.values(topProblemMap).sort((a,b)=> b.menit-a.menit).slice(0,8);
-  const topProblemLabels = topProblemSorted.length ? topProblemSorted.map(it => `${it.ketText} (${it.catLabel})`) : ['Belum ada problem'];
-  const topProblemValues = topProblemSorted.length ? topProblemSorted.map(it => it.menit) : [0];
-  const topProblemColors = topProblemSorted.length ? topProblemSorted.map(it => PROBLEM_CATEGORY_COLOR[it.kategori] || '#ef4444') : ['#ef4444'];
-  charts.topProblem = new Chart(document.getElementById('chartTopProblemToday'), {
-    type: 'bar',
-    data: {
-      labels: topProblemLabels,
-      datasets: [{ label: 'Total Waktu (menit)', data: topProblemValues, backgroundColor: topProblemColors, borderRadius:4 }]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive:true,
-      plugins:{ legend:{ display:false } },
-      scales:{
-        x:{ beginAtZero:true, grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} } },
-        y:{ grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} } }
+  const topProblemCanvas = document.getElementById('chartTopProblemToday');
+  const topProblemEmptyMsg = document.getElementById('topProblemEmptyMsg');
+  if(topProblemSorted.length === 0){
+    // Tidak ada data: jangan paksa render chart (bikin sumbu-X aneh 0.1-1.0 & keliatan nempel/kosong),
+    // cukup sembunyikan canvas dan tampilkan pesan yang rapi di tengah area yang sama.
+    if(topProblemCanvas) topProblemCanvas.style.display = 'none';
+    if(topProblemEmptyMsg) topProblemEmptyMsg.style.display = 'flex';
+  } else {
+    if(topProblemCanvas) topProblemCanvas.style.display = 'block';
+    if(topProblemEmptyMsg) topProblemEmptyMsg.style.display = 'none';
+    const topProblemLabels = topProblemSorted.map(it => `${it.ketText} (${it.catLabel})`);
+    const topProblemValues = topProblemSorted.map(it => it.menit);
+    const topProblemColors = topProblemSorted.map(it => PROBLEM_CATEGORY_COLOR[it.kategori] || '#ef4444');
+    charts.topProblem = new Chart(topProblemCanvas, {
+      type: 'bar',
+      data: {
+        labels: topProblemLabels,
+        datasets: [{ label: 'Total Waktu (menit)', data: topProblemValues, backgroundColor: topProblemColors, borderRadius:4 }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{ legend:{ display:false } },
+        scales:{
+          x:{ beginAtZero:true, grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} } },
+          y:{ grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} } }
+        }
       }
-    }
-  });
+    });
+    charts.topProblem.resize();
+  }
 
 }
 
@@ -3674,7 +4153,10 @@ function buildMonthlyMachineData(year){
   const data = {};
 
   machineIds.forEach(mId => {
-    data[mId] = Array.from({ length: 12 }, () => ({ strokeSum:0, ngSum:0, totalJamSum:0, lineStopMenitSum:0 }));
+    data[mId] = Array.from({ length: 12 }, () => ({
+      strokeSum:0, ngSum:0, totalJamSum:0, lineStopMenitSum:0,
+      strokeSumWeekday:0, totalJamSumWeekday:0, // khusus dasar hitung GSPH: exclude Sabtu/Minggu & tanggal libur custom
+    }));
     const entries = getEntries(mId);
     entries.forEach(e => {
       if(!e.tanggal) return;
@@ -3684,10 +4166,16 @@ function buildMonthlyMachineData(year){
       const mo = parseInt(parts[1], 10); // 1-12
       if(y !== currentYear || mo < 1 || mo > 12) return;
       const bucket = data[mId][mo - 1];
+      // Stroke/NG/Line Stop tetap ikutkan SEMUA hari (termasuk overtime weekend) — ini tetap catatan produksi lengkap.
       bucket.strokeSum += e.stroke || 0;
       bucket.ngSum += e.qtyNg || 0;
       bucket.totalJamSum += (e.computed && e.computed.totalJam) || 0;
       (e.problems || []).forEach(p => { bucket.lineStopMenitSum += p.menit || 0; });
+      // GSPH saja yang exclude Sabtu/Minggu/libur custom dari basis perhitungannya.
+      if(!isNonProductionDay(e.tanggal)){
+        bucket.strokeSumWeekday += e.stroke || 0;
+        bucket.totalJamSumWeekday += (e.computed && e.computed.totalJam) || 0;
+      }
     });
   });
 
@@ -3749,7 +4237,7 @@ function renderMonthlyMachineTables(){
 
   gsphBody.innerHTML = machineIds.map(mId => {
     const target = (MACHINES.find(m => m.id === mId) || {}).target || 0;
-    const monthlyGsph = data[mId].map(b => b.totalJamSum > 0 ? Math.round(b.strokeSum / b.totalJamSum) : null);
+    const monthlyGsph = data[mId].map(b => b.totalJamSumWeekday > 0 ? Math.round(b.strokeSumWeekday / b.totalJamSumWeekday) : null);
     const cells = monthlyGsph.map(v => `<td>${v === null ? '-' : v}</td>`).join('');
     const validVals = monthlyGsph.filter(v => v !== null);
     const rataRata = validVals.length ? Math.round(validVals.reduce((a,b) => a+b, 0) / validVals.length) : null;
@@ -3783,8 +4271,8 @@ function exportMonthlyMachineCsv(metric, filenamePrefix){
     const cols = ['Mesin', 'Target', ...NAMA_BULAN_PENDEK, 'Rata-rata', 'Achievement GSPH %'];
     const rows = machineIds.map(mId => {
       const target = (MACHINES.find(m => m.id === mId) || {}).target || 0;
-      const monthlyGsph = data[mId].map(b => b.totalJamSum > 0 ? Math.round(b.strokeSum / b.totalJamSum) : 0);
-      const validVals = data[mId].filter(b => b.totalJamSum > 0).map(b => Math.round(b.strokeSum / b.totalJamSum));
+      const monthlyGsph = data[mId].map(b => b.totalJamSumWeekday > 0 ? Math.round(b.strokeSumWeekday / b.totalJamSumWeekday) : 0);
+      const validVals = data[mId].filter(b => b.totalJamSumWeekday > 0).map(b => Math.round(b.strokeSumWeekday / b.totalJamSumWeekday));
       const rataRata = validVals.length ? Math.round(validVals.reduce((a,b) => a+b, 0) / validVals.length) : 0;
       const achievement = (validVals.length && target > 0) ? Math.round((rataRata / target) * 1000) / 10 : 0;
       return [mId, target, ...monthlyGsph, rataRata, achievement];
@@ -3842,9 +4330,11 @@ addProblemRow();
 recomputeStrip();
 updateSyncBanner();
 renderAll();
+renderSyncStatusBadge();
 syncFromServer(false);
 syncMasterFromServer();
 checkLoginGate();
+setInterval(renderEarlyWarningBanner, 5 * 60 * 1000);
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js');
 }
