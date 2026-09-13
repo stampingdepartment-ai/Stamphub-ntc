@@ -816,6 +816,10 @@ input[type="time"]::-webkit-calendar-picker-indicator{
 </div>
 
     <div class="sidebar-footer">
+      <div id="offlineBadge" style="display:none; align-items:center; gap:6px; font-size:12px; color:var(--danger); font-weight:700; padding:6px 0;">
+        <span style="width:8px; height:8px; border-radius:50%; background:var(--danger); flex-shrink:0;"></span>
+        Offline &mdash; belum tersambung internet
+      </div>
       <div class="login-info" id="loginInfo" style="display:none;">
         <span id="loginInfoName"></span>
         <button class="btn btn-ghost btn-sm" id="logoutBtn" type="button">Keluar</button>
@@ -2084,6 +2088,18 @@ function updateSyncBanner(){
   document.getElementById('syncBanner').style.display = connected ? 'none' : 'flex';
   document.getElementById('settingsBtn').textContent = connected ? '🟢 Sheets Aktif' : '⚙ Hubungkan Sheets';
 }
+
+/** Tampilkan/sembunyikan badge "Offline" di sidebar-footer berdasarkan status koneksi
+ *  browser (navigator.onLine) + event 'online'/'offline' bawaan browser. Ini murni
+ *  informasi ke operator ("internet kamu putus, laporan belum tentu ke-sync") — bukan
+ *  pengganti pengecekan gagal-sync per-laporan yang sudah ada (badge "belum sync"). */
+function renderOfflineBadge(){
+  const el = document.getElementById('offlineBadge');
+  if(el) el.style.display = navigator.onLine ? 'none' : 'flex';
+}
+window.addEventListener('online', () => { renderOfflineBadge(); toast('Koneksi internet tersambung lagi'); syncFromServer(false); });
+window.addEventListener('offline', () => { renderOfflineBadge(); toast('Koneksi internet terputus — laporan baru akan tersimpan lokal dulu'); });
+
 function updateModalStatus(){
   const cfg = getConfig();
   const el = document.getElementById('modalStatus');
@@ -2188,6 +2204,11 @@ document.getElementById('productionFolderToggle').addEventListener('click', () =
 document.getElementById('tabs').addEventListener('click', (e) => {
   const btn = e.target.closest('button');
   if(!btn || !btn.dataset.view) return;
+  if(state.view === 'input' && btn.dataset.view !== 'input' && isEntryFormDirty){
+    const leave = confirm('Ada isian di form Entry Data yang belum disimpan. Yakin mau pindah halaman? Isian yang belum di-Simpan akan hilang.');
+    if(!leave) return;
+    isEntryFormDirty = false;
+  }
   state.view = btn.dataset.view;
   document.querySelectorAll('#tabs button[data-view]').forEach(b => b.classList.toggle('active', b === btn));
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -2397,8 +2418,22 @@ function resetForm(){
   initShiftSelect();
   initSearchableSelect('f_frekcoolant');   // ← tambahan
   recomputeStrip();
+  isEntryFormDirty = false;
 }
 document.getElementById('resetFormBtn').addEventListener('click', resetForm);
+
+/** Peringatan "unsaved changes": aktif kalau operator sudah mulai ngetik/pilih sesuatu
+ *  di form Entry Data tapi belum sempat Simpan. isEntryFormDirty sengaja HANYA di-set true
+ *  oleh event 'input'/'change' asli dari user (bukan oleh editEntry() yang isi form lewat
+ *  JS), jadi buka form buat edit tidak langsung dianggap "ada perubahan". */
+let isEntryFormDirty = false;
+document.getElementById('entryForm').addEventListener('input', () => { isEntryFormDirty = true; });
+document.getElementById('entryForm').addEventListener('change', () => { isEntryFormDirty = true; });
+window.addEventListener('beforeunload', (e) => {
+  if(!isEntryFormDirty) return;
+  e.preventDefault();
+  e.returnValue = '';
+});
 
 function escapeHtml(str){
   return String(str||'').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
@@ -4329,6 +4364,7 @@ resetForm();
 addProblemRow();
 recomputeStrip();
 updateSyncBanner();
+renderOfflineBadge();
 renderAll();
 renderSyncStatusBadge();
 syncFromServer(false);
