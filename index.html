@@ -980,7 +980,7 @@ input[type="time"]::-webkit-calendar-picker-indicator{
     <option value="7">7</option>
     <option value="8">8</option>
     <option value="9">9</option>
-    <option value="Tidak Pakai">Tidak Pakai (0)</option>
+    <option value="Tidak">Tidak pakai (0)</option>
     <option value="Continue">Continue (100%)</option>
   </select>
 </div>
@@ -3501,11 +3501,15 @@ function renderDashboard(){
   const prevTotalLineStopJam = prevRangeEntries.reduce((s,e)=> s+e.computed.lineStop, 0)/60;
 
   const gsphOf = (list) => {
-    // Pakai e.gsph (nilai yang sama dengan kolom GSPH di Record Data), yang rumusnya:
-    // Stroke / (Total Menit - Waktu Line Stop Terplanning) x 60 — BUKAN stroke/totalJam murni.
-    // Ini memastikan angka GSPH di Dashboard selalu sama dengan yang di Record Data.
-    const validList = list.filter(e => e.gsph !== null && e.gsph !== undefined && e.gsph > 0);
-    return validList.length ? Math.round(validList.reduce((a,e)=> a + e.gsph, 0) / validList.length) : 0;
+    // GSPH gabungan = Total Stroke / (Total Jam Produksi - Total Line Stop Terplanning).
+    // (SEBELUMNYA: rata-rata polos dari GSPH tiap entry — hasilnya bisa beda dari rumus
+    // aslinya kalau jam produksi tiap entry tidak sama persis. Sekarang dihitung sebagai
+    // satu rasio total/total, sama seperti rumus GSPH per entry di Record Data, supaya
+    // konsisten dengan tabel Summary GSPH & tabel GSPH per Mesin.)
+    const totalStroke = list.reduce((a,e)=> a + (e.stroke || 0), 0);
+    const totalJamEfektif = list.reduce((a,e)=>
+      a + ((e.computed && e.computed.totalJam) || 0) - ((e.stopTerplanMenit || 0) / 60), 0);
+    return totalJamEfektif > 0 ? Math.round(totalStroke / totalJamEfektif) : 0;
   };
   const strokeAvgOf = (list) => list.length ? Math.round(list.reduce((s,e)=> s+e.stroke,0)/list.length) : 0;
   const pctAvgOf = (list, field) => list.length ? Math.round(list.reduce((s,e)=> s+e.computed[field],0)/list.length) : 0;
@@ -3586,7 +3590,8 @@ function renderDashboard(){
     const d = byDay[e.tanggal];
     d.strokeSum += e.stroke;
     d.ngSum += e.qtyNg;
-    d.totalJamSum += e.computed.totalJam;
+    // GSPH = Stroke / (Total Jam - Line Stop Terplanning), BUKAN Total Jam mentah.
+    d.totalJamSum += e.computed.totalJam - ((e.stopTerplanMenit || 0) / 60);
     d.terencanaSum += e.stopTerplanMenit || 0;
     d.takTerencanaSum += e.computed.lineStop;
     d.effList.push(e.computed.pctEfisiensi);
@@ -3596,7 +3601,8 @@ function renderDashboard(){
     d.byShift[sh].strokeSum += e.stroke;
     d.byShift[sh].ngSum += e.qtyNg;
     d.byShift[sh].lineStopSum += e.computed.lineStop;
-    d.byShift[sh].totalJamSum += e.computed.totalJam;
+    // sama: basis GSPH per shift juga harus dikurangi Line Stop Terplanning per entry.
+    d.byShift[sh].totalJamSum += e.computed.totalJam - ((e.stopTerplanMenit || 0) / 60);
   });
   const days = Object.keys(byDay).sort(); // tampilkan semua tanggal yang ada datanya
   const labels = days.map(d => d.slice(5).split('-').reverse().join('/'));
@@ -4077,22 +4083,24 @@ function exportTableToCsv(cols, rows, filenamePrefix, machineLabel){
  *  Dipisah dari renderSummary() supaya bisa dipanggil 2x: sekali untuk "semua data",
  *  sekali lagi untuk "data sesuai filter tanggal" — lalu tiap tabel tinggal pilih pakai yang mana. */
 function aggregateEntries(entries){
-  const emptyShift = () => ({ strokeSum:0, ngSum:0, totalJamSum:0, dandoriMenitSum:0, dandoriFreq:0, spmSum:0, spmCount:0, stopCat:{} });
+  const emptyShift = () => ({ strokeSum:0, ngSum:0, totalJamSum:0, terencanaSum:0, dandoriMenitSum:0, dandoriFreq:0, spmSum:0, spmCount:0, stopCat:{} });
   const byDay = {};
   entries.forEach(e => {
     if(!byDay[e.tanggal]) byDay[e.tanggal] = {
-      strokeSum:0, ngSum:0, totalJamSum:0,
+      strokeSum:0, ngSum:0, totalJamSum:0, terencanaSum:0,
       byShift: { RED: emptyShift(), BLUE: emptyShift() }
     };
     const d = byDay[e.tanggal];
     d.strokeSum += e.stroke;
     d.ngSum += e.qtyNg;
-    d.totalJamSum += e.computed.totalJam;
+    d.totalJamSum += e.computed.totalJam; // Total Jam Produksi (mentah, ditampilkan apa adanya)
+    d.terencanaSum += e.stopTerplanMenit || 0; // dipakai HANYA utk basis rumus GSPH (lihat buildGsphTableData)
     const sh = e.shift === 'BLUE' ? 'BLUE' : 'RED';
     const s = d.byShift[sh];
     s.strokeSum += e.stroke;
     s.ngSum += e.qtyNg;
     s.totalJamSum += e.computed.totalJam;
+    s.terencanaSum += e.stopTerplanMenit || 0;
     s.dandoriMenitSum += e.dandori || 0;
     s.dandoriFreq += 1;
     s.spmSum += e.spm || 0;
@@ -4146,11 +4154,12 @@ function buildGsphTableData(agg){
   agg.days.forEach(d => {
     const day = fmtTglDDMMYY(d);
     const dayObj = agg.byDay[d];
-    const gsphDay = ratio(dayObj.strokeSum, dayObj.totalJamSum);
+    // GSPH = Stroke / (Total Jam Produksi - Line Stop Terplanning), bukan Total Jam Produksi mentah.
+    const gsphDay = ratio(dayObj.strokeSum, dayObj.totalJamSum - (dayObj.terencanaSum / 60));
     const shiftsPresent = ['RED','BLUE'].filter(sh => dayObj.byShift[sh] && dayObj.byShift[sh].dandoriFreq > 0);
     shiftsPresent.forEach((sh, idx) => {
       const s = dayObj.byShift[sh];
-      const gsphShift = ratio(s.strokeSum, s.totalJamSum);
+      const gsphShift = ratio(s.strokeSum, s.totalJamSum - (s.terencanaSum / 60));
       const spmAvg = s.spmCount ? Math.round(s.spmSum / s.spmCount) : 0;
       let totalStopMenit = 0;
       const stopVals = cats.map(c => {
@@ -4477,7 +4486,9 @@ function buildMonthlyMachineData(year){
       // GSPH saja yang exclude Sabtu/Minggu/libur custom dari basis perhitungannya.
       if(!isNonProductionDay(e.tanggal)){
         bucket.strokeSumWeekday += e.stroke || 0;
-        bucket.totalJamSumWeekday += (e.computed && e.computed.totalJam) || 0;
+        // totalJamSumWeekday HANYA dipakai sbg basis rumus GSPH, jadi harus sudah dikurangi
+        // Line Stop Terplanning (menit) per entry — bukan Total Jam Produksi mentah.
+        bucket.totalJamSumWeekday += ((e.computed && e.computed.totalJam) || 0) - ((e.stopTerplanMenit || 0) / 60);
       }
     });
   });
@@ -4733,7 +4744,8 @@ function buildDailyMachineData(year, month){
       (e.problems || []).forEach(p => { bucket.lineStopMenitSum += p.menit || 0; });
       if(!isNonProductionDay(e.tanggal)){
         bucket.strokeSumWeekday += e.stroke || 0;
-        bucket.totalJamSumWeekday += (e.computed && e.computed.totalJam) || 0;
+        // sama seperti versi bulanan: basis GSPH = Total Jam - Line Stop Terplanning.
+        bucket.totalJamSumWeekday += ((e.computed && e.computed.totalJam) || 0) - ((e.stopTerplanMenit || 0) / 60);
       }
     });
   });
