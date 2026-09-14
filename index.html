@@ -301,6 +301,13 @@ input[type="time"]::-webkit-calendar-picker-indicator{
     display:grid; grid-template-columns: 150px 1fr 90px 34px; gap:8px; align-items:center;
   }
   @media (max-width: 700px){ .problem-row{ grid-template-columns: 1fr; } }
+
+  /* jenis NG rows */
+  #ngRows{ display:flex; flex-direction:column; gap:8px; }
+  .ng-row{
+    display:grid; grid-template-columns: 1fr 110px 34px; gap:8px; align-items:center;
+  }
+  @media (max-width: 700px){ .ng-row{ grid-template-columns: 1fr; } }
   .icon-btn{
     width:34px; height:34px; border-radius:7px; border:1px solid var(--border);
     background: var(--panel-2); color: var(--text-dim); cursor:pointer; font-size:16px; line-height:1;
@@ -355,9 +362,9 @@ input[type="time"]::-webkit-calendar-picker-indicator{
   /* ---------- Tabel Bulanan per Mesin (GSPH/Stroke/LineStop/NG) ---------- */
   .monthly-machine-table table{ min-width:0; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
   .monthly-machine-table thead th{
-    background: linear-gradient(180deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 75%, black) 100%);
-    color: var(--accent-ink); text-transform:none; font-size:12px; font-weight:700;
-    text-align:center; border-right:1px solid rgba(0,0,0,0.15); border-bottom:none;
+    background: var(--panel-2);
+    color: var(--text); text-transform:none; font-size:12px; font-weight:700;
+    text-align:center; border-right:1px solid var(--border); border-bottom:none;
   }
   .monthly-machine-table thead th:first-child{ text-align:left; }
   .monthly-machine-table tbody td{
@@ -431,6 +438,23 @@ input[type="time"]::-webkit-calendar-picker-indicator{
   .hmi-card .hmi-trend.down{ color:#ffc9c2; }
   .hmi-card.hmi-alert{ box-shadow: 0 0 0 2px #ffffff55 inset; animation: hmiAlertPulse 1.6s ease-in-out infinite; }
   @keyframes hmiAlertPulse{ 0%,100%{ filter:brightness(1); } 50%{ filter:brightness(1.18); } }
+
+  /* Versi ringkas dari hmi-grid/hmi-card, dipakai untuk kartu per-mesin di atas tiap
+     tabel General Summary (Harian/Bulanan) — 8 baris x 4 kartu jadi kebanyakan kalau
+     ukurannya sebesar kartu Dashboard, jadi dibikin jauh lebih kecil & rapat. */
+  .hmi-grid-compact{ display:grid; grid-template-columns: repeat(4,1fr); gap:6px; margin-bottom:6px; }
+  @media (max-width: 900px){ .hmi-grid-compact{ grid-template-columns: repeat(2,1fr); } }
+  @media (max-width: 480px){ .hmi-grid-compact{ grid-template-columns: 1fr; } }
+  .hmi-card-compact{
+    position:relative; overflow:hidden; border-radius:6px;
+    padding:5px 8px; min-height:0; color:#fff;
+  }
+  .hmi-card-compact .hmi-value{ font-family: var(--mono); font-size:13px; font-weight:800; line-height:1.1; }
+  .hmi-card-compact .hmi-label{ font-size:8.5px; margin-top:0; opacity:.95; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .hmi-card-compact .hmi-icon{
+    position:absolute; right:4px; bottom:-6px; font-size:18px; opacity:.18;
+    line-height:1; user-select:none;
+  }
   .hmi-red{ background: linear-gradient(135deg, #e0483e, #c93c33); }
   .hmi-orange{ background: linear-gradient(135deg, #f0a732, #d6901f); }
   .hmi-green{ background: linear-gradient(135deg, #3fae4a, #2f9139); }
@@ -610,13 +634,10 @@ input[type="time"]::-webkit-calendar-picker-indicator{
 /* ---------- Cetak laporan harian (print-friendly) ---------- */
 .print-only{ display:none; }
 @media print{
-  @page{ size: A4 landscape; margin: 8mm; }
-  html, body{ width:100%; }
   body *{ visibility:hidden; }
   .print-only, .print-only *{ visibility:visible; }
-  .print-only{ display:block; position:absolute; top:0; left:0; width:100%; padding:0; color:#000; background:#fff; }
-  .print-only table{ table-layout:fixed; width:100%; }
-  .print-only th, .print-only td{ border-color:#000 !important; color:#000 !important; word-break:break-word; overflow-wrap:break-word; }
+  .print-only{ position:absolute; top:0; left:0; width:100%; padding:20px; color:#000; background:#fff; }
+  .print-only table, .print-only th, .print-only td{ border-color:#000 !important; color:#000 !important; }
 }
 </style>
 </head>
@@ -812,7 +833,11 @@ input[type="time"]::-webkit-calendar-picker-indicator{
       </button>
       <button data-view="summary">
         <span class="menu-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg></span>
-        <span class="menu-text"><span class="menu-title">Summary</span><span class="menu-sub">Ringkasan Bulanan</span></span>
+        <span class="menu-text"><span class="menu-title">Summary Per Mesin</span><span class="menu-sub">Ringkasan Bulanan</span></span>
+      </button>
+      <button data-view="generalsummary">
+        <span class="menu-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span>
+        <span class="menu-text"><span class="menu-title">General Summary</span><span class="menu-sub">All Mesin</span></span>
       </button>
     </div>
   </div>
@@ -936,13 +961,12 @@ input[type="time"]::-webkit-calendar-picker-indicator{
           <div class="field"><label>Material Digunakan (pcs)</label><input type="number" id="f_material" min="0"required></div>
           <div class="field"><label>Actual Produksi (Stroke)</label><input type="number" id="f_stroke" min="0" required></div>
           <div class="field"><label>Actual Produksi (Pcs OK)</label><input type="number" id="f_pcsok" min="0" required></div>
-          <div class="field"><label>Jenis Scrap</label><select id="f_jenisscrap"></select></div>
-          <div class="field"><label>Qty Scrap (Pcs NG)</label><input type="number" id="f_qtyng" min="0" value="0"></div>
+          <div class="field" style="grid-column: span 2;"><label>Total Qty Scrap NG (pcs) <span style="font-weight:400; color:var(--text-faint);">&mdash; otomatis, jumlah semua jenis NG di bawah</span></label><input type="number" id="f_qtyng" min="0" value="0" readonly tabindex="-1"></div>
           <div class="field"><label>Actual SPM</label><input type="number" id="f_spm" min="0"required></div>
           <div class="field"><label>SPM Kajuhekin</label><input type="number" id="f_spmkajuhekin" readonly tabindex="-1"></div>
           <div class="field"><label>GSPH / Item</label><input type="number" id="f_gsph" readonly tabindex="-1"></div>
           <div class="field"><label>Waktu Efektif (Menit)</label><input type="number" id="f_waktuefektif" readonly tabindex="-1"></div>
-          <div class="field"><label>% Efisiensi</label><input type="text" id="f_pctefisiensi" readonly tabindex="-1"></div>  
+          <div class="field"><label>% Produksi</label><input type="text" id="f_pctefisiensi" readonly tabindex="-1"></div>  
         <div class="field">
   <label>Frekuensi Spray Coolant (Dromus)</label>
   <select id="f_frekcoolant" required>
@@ -960,6 +984,11 @@ input[type="time"]::-webkit-calendar-picker-indicator{
   </select>
 </div>
 </div>
+        <div style="margin-top:14px;">
+          <label style="display:block; font-size:12px; color:var(--text-faint); margin-bottom:6px;">Jenis NG (bisa lebih dari satu jenis untuk item produksi yang sama)</label>
+          <div id="ngRows"></div>
+          <button type="button" class="btn btn-ghost btn-sm" id="addNgBtn" style="margin-top:8px;">+ Tambah Jenis NG</button>
+        </div>
         <div class="grid cols-4" style="margin-top:14px;">
           <div class="field" style="grid-column: span 2;">
             <label>Status Produksi</label>
@@ -973,6 +1002,10 @@ input[type="time"]::-webkit-calendar-picker-indicator{
           <div class="field" style="grid-column: span 2;">
             <label>Hasil Status (Otomatis)</label>
             <input type="text" id="f_status_live" readonly tabindex="-1">
+          </div>
+          <div class="field" style="grid-column: span 4;">
+            <label>Alasan <span id="f_alasan_label_suffix">(wajib diisi)</span></label>
+            <input type="text" id="f_alasan_tidaksesuai" placeholder="Contoh: Produksi sesuai planning / Mesin trouble 30 menit / dll">
           </div>
         </div>
       </div>
@@ -1088,6 +1121,8 @@ input[type="time"]::-webkit-calendar-picker-indicator{
         <label class="summary-filter-pill"><input type="radio" name="dashboardRange" value="today" checked> Hari Ini</label>
         <label class="summary-filter-pill"><input type="radio" name="dashboardRange" value="yesterday"> Kemarin</label>
         <label class="summary-filter-pill"><input type="radio" name="dashboardRange" value="week"> 7 Hari Terakhir</label>
+        <label class="summary-filter-pill"><input type="radio" name="dashboardRange" value="month"> 1 Bulan Terakhir</label>
+        <label class="summary-filter-pill"><input type="radio" name="dashboardRange" value="monthtodate"> Bulan Berjalan</label>
       </div>
       <div style="font-size:12px; color:var(--text-faint); display:flex; align-items:center; gap:10px;">
         <span id="dashboardLastSync">Terakhir sync: &ndash;</span>
@@ -1103,9 +1138,9 @@ input[type="time"]::-webkit-calendar-picker-indicator{
   <div class="hmi-card hmi-teal"><div class="hmi-value" id="d_gsphavg_blue">0</div><span class="hmi-trend" id="d_gsphavg_blue_trend"></span><div class="hmi-label">GSPH Shift Biru <span class="hmi-range-suffix">(Hari Ini)</span></div><div class="hmi-icon">&#128202;</div></div>
   <div class="hmi-card hmi-purple"><div class="hmi-value" id="d_strokeavg_red">0</div><span class="hmi-trend" id="d_strokeavg_red_trend"></span><div class="hmi-label">Stroke Shift Merah <span class="hmi-range-suffix">(Hari Ini)</span></div><div class="hmi-icon">&#128257;</div></div>
   <div class="hmi-card hmi-purple"><div class="hmi-value" id="d_strokeavg_blue">0</div><span class="hmi-trend" id="d_strokeavg_blue_trend"></span><div class="hmi-label">Stroke Shift Biru <span class="hmi-range-suffix">(Hari Ini)</span></div><div class="hmi-icon">&#128257;</div></div>
-  <div class="hmi-card hmi-green"><div class="hmi-value" id="d_effavg">0%</div><span class="hmi-trend" id="d_effavg_trend"></span><div class="hmi-label">Efisiensi Rata-rata <span class="hmi-range-suffix">(Hari Ini)</span></div><div class="hmi-icon">&#9989;</div></div>
-  <div class="hmi-card hmi-orange"><div class="hmi-value" id="d_dandoriavg">0%</div><span class="hmi-trend" id="d_dandoriavg_trend"></span><div class="hmi-label">Dandori Rata-rata <span class="hmi-range-suffix">(Hari Ini)</span></div><div class="hmi-icon">&#128736;</div></div>
-  <div class="hmi-card hmi-red"><div class="hmi-value" id="d_linestoppctavg">0%</div><span class="hmi-trend" id="d_linestoppctavg_trend"></span><div class="hmi-label">Line Stop Rata-rata <span class="hmi-range-suffix">(Hari Ini)</span></div><div class="hmi-icon">&#9940;</div></div>
+  <div class="hmi-card hmi-green"><div class="hmi-value" id="d_effavg">0%</div><span class="hmi-trend" id="d_effavg_trend"></span><div class="hmi-label">% Produksi <span class="hmi-range-suffix">(Hari Ini)</span></div><div class="hmi-icon">&#9989;</div></div>
+  <div class="hmi-card hmi-orange"><div class="hmi-value" id="d_dandoriavg">0%</div><span class="hmi-trend" id="d_dandoriavg_trend"></span><div class="hmi-label">% Dandori <span class="hmi-range-suffix">(Hari Ini)</span></div><div class="hmi-icon">&#128736;</div></div>
+  <div class="hmi-card hmi-red"><div class="hmi-value" id="d_linestoppctavg">0%</div><span class="hmi-trend" id="d_linestoppctavg_trend"></span><div class="hmi-label">% Line Stop <span class="hmi-range-suffix">(Hari Ini)</span></div><div class="hmi-icon">&#9940;</div></div>
   <div class="hmi-card hmi-orange"><div class="hmi-value" id="d_stopterplanpctavg">0%</div><span class="hmi-trend" id="d_stopterplanpctavg_trend"></span><div class="hmi-label">% Line Stop Terplanning <span class="hmi-range-suffix">(Hari Ini)</span></div><div class="hmi-icon">&#128197;</div></div>
 </div>
 
@@ -1114,7 +1149,7 @@ input[type="time"]::-webkit-calendar-picker-indicator{
         <h3>Overview 4 Mesin <span id="dashboardOverviewRangeLabel" style="color:var(--text-faint); text-transform:none; font-weight:400;">(Hari Ini)</span></h3>
         <div class="table-wrap summary-table">
           <table>
-            <thead><tr><th>Mesin</th><th>Target GSPH</th><th>Actual GSPH</th><th>Total Stroke</th><th>Frekuensi Dandori</th><th>Total NG</th><th>Line Stop (Jam)</th></tr></thead>
+            <thead><tr><th>Mesin</th><th>Target GSPH</th><th>Actual GSPH</th><th>Total Stroke</th><th>Total Produksi (Jam)</th><th>Total Produksi (Item)</th><th>Total NG</th><th>Total Line Stop (Jam)</th></tr></thead>
             <tbody id="tblOverview4Mesin"><tr></tr></tbody>
           </table>
         </div>
@@ -1195,10 +1230,7 @@ input[type="time"]::-webkit-calendar-picker-indicator{
             <label class="summary-filter-pill"><input type="checkbox" id="summaryFilterTargetProduksiItem"> Summary Produksi per Item</label>
             <label class="summary-filter-pill"><input type="checkbox" id="summaryFilterTargetNgPart"> Ringkasan NG per Part Nomor</label>
             <label class="summary-filter-pill"><input type="checkbox" id="summaryFilterTargetNgJenis"> Ringkasan NG per Jenis</label>
-            <label class="summary-filter-pill"><input type="checkbox" id="summaryFilterTargetLineStop1600TR"> Line Stop 1600TR</label>
-            <label class="summary-filter-pill"><input type="checkbox" id="summaryFilterTargetLineStop2500TR"> Line Stop 2500TR</label>
-            <label class="summary-filter-pill"><input type="checkbox" id="summaryFilterTargetLineStop800BP"> Line Stop 800BP</label>
-            <label class="summary-filter-pill"><input type="checkbox" id="summaryFilterTargetLineStop300BP"> Line Stop 300BP</label>
+            <label class="summary-filter-pill"><input type="checkbox" id="summaryFilterTargetLineStop"> Summary Line Stop (Mesin Terpilih)</label>
           </div>
         </div>
       </div>
@@ -1260,58 +1292,35 @@ input[type="time"]::-webkit-calendar-picker-indicator{
       </div>
     </div>
     <div class="grid cols-2" style="margin-top:14px;">
-      <div class="chart-card">
+      <div class="chart-card" style="grid-column:1 / -1;">
         <h3 style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
-          <span>Summary Line Stop &mdash; Mc. 1600TR <span id="lineStop1600TRFilterBadge" style="font-size:11px; font-weight:400; color:var(--text-faint);"></span></span>
-          <button class="btn btn-ghost btn-sm" id="exportLineStop1600TRCsvBtn">Export CSV</button>
+          <span>Summary Line Stop &mdash; <span id="lineStopSelectedMachineLabel">Mc. 1600TR</span> <span id="lineStopSelectedFilterBadge" style="font-size:11px; font-weight:400; color:var(--text-faint);"></span></span>
+          <button class="btn btn-ghost btn-sm" id="exportLineStopSelectedCsvBtn">Export CSV</button>
         </h3>
         <div class="table-wrap summary-table">
           <table>
             <thead><tr><th>No.</th><th>Tanggal</th><th>Part Nomor</th><th>Shift</th><th>Total Time (menit)</th><th>Problem</th><th>Keterangan</th></tr></thead>
-            <tbody id="tblLineStop1600TR"><tr></tr></tbody>
-          </table>
-        </div>
-      </div>
-      <div class="chart-card">
-        <h3 style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
-          <span>Summary Line Stop &mdash; Mc. 2500TR <span id="lineStop2500TRFilterBadge" style="font-size:11px; font-weight:400; color:var(--text-faint);"></span></span>
-          <button class="btn btn-ghost btn-sm" id="exportLineStop2500TRCsvBtn">Export CSV</button>
-        </h3>
-        <div class="table-wrap summary-table">
-          <table>
-            <thead><tr><th>No.</th><th>Tanggal</th><th>Part Nomor</th><th>Shift</th><th>Total Time (menit)</th><th>Problem</th><th>Keterangan</th></tr></thead>
-            <tbody id="tblLineStop2500TR"><tr></tr></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-    <div class="grid cols-2" style="margin-top:14px;">
-      <div class="chart-card">
-        <h3 style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
-          <span>Summary Line Stop &mdash; Mc. 800BP <span id="lineStop800BPFilterBadge" style="font-size:11px; font-weight:400; color:var(--text-faint);"></span></span>
-          <button class="btn btn-ghost btn-sm" id="exportLineStop800BPCsvBtn">Export CSV</button>
-        </h3>
-        <div class="table-wrap summary-table">
-          <table>
-            <thead><tr><th>No.</th><th>Tanggal</th><th>Part Nomor</th><th>Shift</th><th>Total Time (menit)</th><th>Problem</th><th>Keterangan</th></tr></thead>
-            <tbody id="tblLineStop800BP"><tr></tr></tbody>
-          </table>
-        </div>
-      </div>
-      <div class="chart-card">
-        <h3 style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
-          <span>Summary Line Stop &mdash; Mc. 300BP <span id="lineStop300BPFilterBadge" style="font-size:11px; font-weight:400; color:var(--text-faint);"></span></span>
-          <button class="btn btn-ghost btn-sm" id="exportLineStop300BPCsvBtn">Export CSV</button>
-        </h3>
-        <div class="table-wrap summary-table">
-          <table>
-            <thead><tr><th>No.</th><th>Tanggal</th><th>Part Nomor</th><th>Shift</th><th>Total Time (menit)</th><th>Problem</th><th>Keterangan</th></tr></thead>
-            <tbody id="tblLineStop300BP"><tr></tr></tbody>
+            <tbody id="tblLineStopSelected"><tr></tr></tbody>
           </table>
         </div>
       </div>
     </div>
 
+
+  </section>
+
+  <section class="view" id="view-generalsummary">
+    <h2 class="section-title">General Summary <span style="font-size:12px; font-weight:400; color:var(--text-faint);">(Gabungan Semua Mesin)</span></h2>
+
+    <div class="summary-filter-card" style="margin-top:14px; display:flex; align-items:center; gap:10px;">
+      <span class="summary-filter-targetlabel" style="margin-bottom:0;">Tampilan:</span>
+      <div class="summary-filter-pills" id="generalSummarySubTabPills">
+        <label class="summary-filter-pill"><input type="radio" name="generalSummarySubTab" value="harian"> Harian</label>
+        <label class="summary-filter-pill"><input type="radio" name="generalSummarySubTab" value="bulanan" checked> Bulanan</label>
+      </div>
+    </div>
+
+    <div id="generalSummaryBulanan">
     <div class="summary-filter-card" style="margin-top:14px; display:flex; align-items:center; gap:10px;">
       <label for="monthlyMachineYearSelect" style="font-size:12px; color:var(--text-faint); font-weight:600; text-transform:uppercase; letter-spacing:.4px;">Tabel Bulanan &mdash; Tahun</label>
       <select id="monthlyMachineYearSelect" style="width:auto;"></select>
@@ -1322,6 +1331,7 @@ input[type="time"]::-webkit-calendar-picker-indicator{
           <span id="gsphBulanMesinTitle">GSPH/BULAN/MESIN - TAHUN 2026</span>
           <button class="btn btn-ghost btn-sm" id="exportGsphBulanMesinCsvBtn">Export CSV</button>
         </h3>
+        <div class="hmi-grid-compact" id="gsphBulanMesinCards" style="margin-bottom:10px;"></div>
         <div class="table-wrap summary-table monthly-machine-table notranslate" translate="no">
           <table>
             <thead><tr id="tblGsphBulanMesinHead"></tr></thead>
@@ -1337,6 +1347,7 @@ input[type="time"]::-webkit-calendar-picker-indicator{
           <span id="strokeBulanMesinTitle">STROKE/BULAN/MESIN - TAHUN 2026</span>
           <button class="btn btn-ghost btn-sm" id="exportStrokeBulanMesinCsvBtn">Export CSV</button>
         </h3>
+        <div class="hmi-grid-compact" id="strokeBulanMesinCards" style="margin-bottom:10px;"></div>
         <div class="table-wrap summary-table monthly-machine-table notranslate" translate="no">
           <table>
             <thead><tr id="tblStrokeBulanMesinHead"></tr></thead>
@@ -1352,6 +1363,7 @@ input[type="time"]::-webkit-calendar-picker-indicator{
           <span id="lineStopBulanMesinTitle">LINE STOP/BULAN/MESIN - TAHUN 2026</span>
           <button class="btn btn-ghost btn-sm" id="exportLineStopBulanMesinCsvBtn">Export CSV</button>
         </h3>
+        <div class="hmi-grid-compact" id="lineStopBulanMesinCards" style="margin-bottom:10px;"></div>
         <div class="table-wrap summary-table monthly-machine-table notranslate" translate="no">
           <table>
             <thead><tr id="tblLineStopBulanMesinHead"></tr></thead>
@@ -1367,6 +1379,7 @@ input[type="time"]::-webkit-calendar-picker-indicator{
           <span id="ngBulanMesinTitle">NG IN PROSES/BULAN/MESIN - TAHUN 2026</span>
           <button class="btn btn-ghost btn-sm" id="exportNgBulanMesinCsvBtn">Export CSV</button>
         </h3>
+        <div class="hmi-grid-compact" id="ngBulanMesinCards" style="margin-bottom:10px;"></div>
         <div class="table-wrap summary-table monthly-machine-table notranslate" translate="no">
           <table>
             <thead><tr id="tblNgBulanMesinHead"></tr></thead>
@@ -1374,6 +1387,77 @@ input[type="time"]::-webkit-calendar-picker-indicator{
           </table>
         </div>
       </div>
+    </div>
+    </div>
+
+    <div id="generalSummaryHarian" style="display:none;">
+    <div class="summary-filter-card" style="margin-top:14px; display:flex; align-items:center; gap:10px;">
+      <label for="dailyMachineMonthSelect" style="font-size:12px; color:var(--text-faint); font-weight:600; text-transform:uppercase; letter-spacing:.4px;">Tabel Harian &mdash; Bulan</label>
+      <input type="month" id="dailyMachineMonthSelect" style="width:auto;">
+    </div>
+    <div class="grid cols-2" style="margin-top:14px;">
+      <div class="chart-card" style="grid-column:1 / -1;">
+        <h3 style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+          <span id="gsphHariMesinTitle">GSPH/HARI/MESIN - SEPTEMBER 2026</span>
+          <button class="btn btn-ghost btn-sm" id="exportGsphHariMesinCsvBtn">Export CSV</button>
+        </h3>
+        <div class="hmi-grid-compact" id="gsphHariMesinCards" style="margin-bottom:10px;"></div>
+        <div class="table-wrap summary-table monthly-machine-table notranslate" translate="no">
+          <table>
+            <thead><tr id="tblGsphHariMesinHead"></tr></thead>
+            <tbody id="tblGsphHariMesin"><tr></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid cols-2" style="margin-top:14px;">
+      <div class="chart-card" style="grid-column:1 / -1;">
+        <h3 style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+          <span id="strokeHariMesinTitle">STROKE/HARI/MESIN - SEPTEMBER 2026</span>
+          <button class="btn btn-ghost btn-sm" id="exportStrokeHariMesinCsvBtn">Export CSV</button>
+        </h3>
+        <div class="hmi-grid-compact" id="strokeHariMesinCards" style="margin-bottom:10px;"></div>
+        <div class="table-wrap summary-table monthly-machine-table notranslate" translate="no">
+          <table>
+            <thead><tr id="tblStrokeHariMesinHead"></tr></thead>
+            <tbody id="tblStrokeHariMesin"><tr></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid cols-2" style="margin-top:14px;">
+      <div class="chart-card" style="grid-column:1 / -1;">
+        <h3 style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+          <span id="lineStopHariMesinTitle">LINE STOP/HARI/MESIN - SEPTEMBER 2026</span>
+          <button class="btn btn-ghost btn-sm" id="exportLineStopHariMesinCsvBtn">Export CSV</button>
+        </h3>
+        <div class="hmi-grid-compact" id="lineStopHariMesinCards" style="margin-bottom:10px;"></div>
+        <div class="table-wrap summary-table monthly-machine-table notranslate" translate="no">
+          <table>
+            <thead><tr id="tblLineStopHariMesinHead"></tr></thead>
+            <tbody id="tblLineStopHariMesin"><tr></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid cols-2" style="margin-top:14px;">
+      <div class="chart-card" style="grid-column:1 / -1;">
+        <h3 style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+          <span id="ngHariMesinTitle">NG IN PROSES/HARI/MESIN - SEPTEMBER 2026</span>
+          <button class="btn btn-ghost btn-sm" id="exportNgHariMesinCsvBtn">Export CSV</button>
+        </h3>
+        <div class="hmi-grid-compact" id="ngHariMesinCards" style="margin-bottom:10px;"></div>
+        <div class="table-wrap summary-table monthly-machine-table notranslate" translate="no">
+          <table>
+            <thead><tr id="tblNgHariMesinHead"></tr></thead>
+            <tbody id="tblNgHariMesin"><tr></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
     </div>
   </section>
 
@@ -1402,7 +1486,7 @@ let state = {
   lastSyncAt: '',
   summaryFilter: {
     from: '', to: '',
-    targets: { gsph: true, produksiItem: false, ngPart: false, ngJenis: false, lineStop1600TR: false, lineStop2500TR: false, lineStop800BP: false, lineStop300BP: false },
+    targets: { gsph: true, produksiItem: false, ngPart: false, ngJenis: false, lineStop: false },
   },
 };
 
@@ -1437,6 +1521,8 @@ function normalizeEntry(e){
 frekCoolant: e.frekCoolant || '',
 jenisScrap: e.jenisScrap || '',
     qtyNg: Number(e.qtyNg) || 0,
+    ngRows: Array.isArray(e.ngRows) ? e.ngRows.map(r => ({ jenis: (r&&r.jenis)||'', qty: Number(r&&r.qty)||0 })) : [],
+    alasanTidakSesuai: e.alasanTidakSesuai || '',
     spm: Number(e.spm) || 0,
     spmKajuhekin: Number(e.spmKajuhekin) || 0,
     gsph: (e.gsph === undefined || e.gsph === null || e.gsph === '') ? null : Number(e.gsph),
@@ -1705,10 +1791,9 @@ function renderMasterSelect(selectId, machine, type, selectedValue){
   if(current && currentExists) el.value = current;
   initSearchableSelect(selectId);
 }
-function refreshMasterSelects(selectedPic, selectedPart, selectedScrap){
+function refreshMasterSelects(selectedPic, selectedPart){
   renderMasterSelect('f_pic', state.machine, 'pic', selectedPic);
   renderMasterSelect('f_part', state.machine, 'part', selectedPart);
-  renderMasterSelect('f_jenisscrap', state.machine, 'scrap', selectedScrap);
 }
 function handleMasterSelectChange(selectId, type){
   const el = document.getElementById(selectId);
@@ -1741,7 +1826,6 @@ function handleMasterSelectChange(selectId, type){
 }
 document.getElementById('f_pic').addEventListener('change', () => handleMasterSelectChange('f_pic', 'pic'));
 document.getElementById('f_part').addEventListener('change', () => handleMasterSelectChange('f_part', 'part'));
-document.getElementById('f_jenisscrap').addEventListener('change', () => handleMasterSelectChange('f_jenisscrap', 'scrap'));
 let currentPartMax = null;
 function updatePartMaxAndValidate(){
   const partName = document.getElementById('f_part').value;
@@ -1896,21 +1980,35 @@ function isAdminUser(){
   const session = getLoginSession();
   return !!(session && session.role === 'admin');
 }
+/** GL/FM = nama baru untuk role yang dulu bernama "Operator". Backend (Code.gs) selalu
+ *  mengirim role dalam huruf kecil, jadi di sini dicek 2 kemungkinan ('operator' lama
+ *  dan 'gl/fm' baru) supaya akun yang belum sempat diubah namanya di sheet Users tetap jalan. */
 function isOperatorUser(){
   const session = getLoginSession();
-  return !!(session && session.role === 'operator');
+  return !!(session && (session.role === 'operator' || session.role === 'gl/fm'));
 }
-/** Operator: boleh input laporan baru & lihat semua data (riwayat/dashboard/summary),
- *  TAPI tidak boleh edit/hapus laporan, dan tidak boleh menambahkan PIC/Part/Jenis
- *  Scrap baru — dua hal itu tetap dicek terpisah lewat isAdminUser() di tempat lain
- *  (tombol Edit/Hapus di renderRiwayat, opsi "+ Tambah Baru..." di renderMasterSelect). */
+/** SPV UP = nama baru untuk role yang dulu bernama "User" (viewer biasa, tanpa akses Entry Data). */
+function isSpvUpUser(){
+  const session = getLoginSession();
+  return !!(session && (session.role === 'user' || session.role === 'spv up'));
+}
+/** T/M = role baru, akses paling terbatas: cuma boleh Entry Data & lihat Record Data
+ *  (tidak boleh Dashboard/Summary/General Summary, tidak boleh edit/hapus/export). */
+function isTmUser(){
+  const session = getLoginSession();
+  return !!(session && session.role === 't/m');
+}
+/** Operator (GL/FM) & T/M: boleh input laporan baru & lihat data, TAPI tidak boleh edit/hapus
+ *  laporan, dan tidak boleh menambahkan PIC/Part/Jenis Scrap baru — dua hal itu tetap dicek
+ *  terpisah lewat isAdminUser() di tempat lain (tombol Edit/Hapus di renderRiwayat, opsi
+ *  "+ Tambah Baru..." di renderMasterSelect). */
 function canInputUser(){
-  return isAdminUser() || isOperatorUser();
+  return isAdminUser() || isOperatorUser() || isTmUser();
 }
-/** Export CSV hanya untuk role 'admin' dan 'user' (viewer biasa / tanpa role khusus).
- *  Operator boleh input & lihat semua data (lihat canInputUser()), tapi TIDAK boleh export CSV. */
+/** Export CSV hanya untuk role 'admin' dan 'spv up' (viewer biasa). Operator (GL/FM) dan
+ *  T/M boleh input & lihat data (lihat canInputUser()), tapi TIDAK boleh export CSV. */
 function canExportCsvUser(){
-  return !isOperatorUser();
+  return !isOperatorUser() && !isTmUser();
 }
 async function apiLogin(employeeId, password){
   const cfg = getConfig();
@@ -1979,18 +2077,36 @@ function updateLoginInfo(){
   }
 }
 function applyRolePermissions(){
-  const canInput = canInputUser(); // admin ATAU operator boleh lihat & pakai tab Input
+  const canInput = canInputUser(); // admin ATAU GL/FM ATAU T/M boleh lihat & pakai tab Input
   const inputBtn = document.querySelector('#tabs button[data-view="input"]');
   if(inputBtn) inputBtn.style.display = canInput ? '' : 'none';
 
   // Semua tombol Export CSV (di Riwayat, Summary, Line Stop per mesin, dan tabel bulanan/mesin)
-  // disembunyikan kalau role-nya operator — operator tidak boleh export CSV sama sekali.
+  // disembunyikan kalau role-nya GL/FM atau T/M — keduanya tidak boleh export CSV sama sekali.
   const canExport = canExportCsvUser();
   document.querySelectorAll('button[id$="CsvBtn"]').forEach(btn => {
     btn.style.display = canExport ? '' : 'none';
   });
 
-  if(!canInput && state.view === 'input'){
+  // T/M: HANYA boleh Entry Data & Record Data. Dashboard, Summary Per Mesin, dan General
+  // Summary disembunyikan total dari menu untuk role ini.
+  const isTm = isTmUser();
+  ['dashboard','summary','generalsummary'].forEach(view => {
+    const btn = document.querySelector(`#tabs button[data-view="${view}"]`);
+    if(btn) btn.style.display = isTm ? 'none' : '';
+  });
+
+  // SPV UP: tombol "General Summary" di sidebar disembunyikan — SPV UP tetap bisa buka
+  // General Summary, tapi lewat opsi "General Summary (Semua Mesin)" di dropdown pilih mesin
+  // (lihat renderMachinePicker()), bukan lewat tombol menu terpisah ini.
+  if(isSpvUpUser()){
+    const generalSummaryBtn = document.querySelector('#tabs button[data-view="generalsummary"]');
+    if(generalSummaryBtn) generalSummaryBtn.style.display = 'none';
+  }
+
+  const restrictedViews = isTm ? ['dashboard','summary','generalsummary'] : [];
+  const needsRedirect = (!canInput && state.view === 'input') || restrictedViews.includes(state.view);
+  if(needsRedirect){
     state.view = 'riwayat';
     document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('active', b.dataset.view === 'riwayat'));
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -2193,12 +2309,30 @@ function currentMachine(){ return MACHINES.find(m => m.id === state.machine); }
 
 function renderMachinePicker(){
   const sel = document.getElementById('machineSelect');
-  sel.innerHTML = MACHINES.map(m =>
-    `<option value="${m.id}" ${m.id === state.machine ? 'selected' : ''}>${m.label}</option>`
+  let optionsHtml = MACHINES.map(m =>
+    `<option value="${m.id}" ${(state.view !== 'generalsummary' && m.id === state.machine) ? 'selected' : ''}>${m.label}</option>`
   ).join('');
-  sel.style.borderColor = currentMachine().color;
+  // SPV UP dapat opsi tambahan "General Summary" langsung di dropdown pilih mesin —
+  // supaya bisa loncat ke ringkasan gabungan 4 mesin tanpa perlu klik menu sidebar terpisah.
+  if(isSpvUpUser()){
+    optionsHtml += `<option value="__generalsummary__" ${state.view === 'generalsummary' ? 'selected' : ''}>General Summary (Semua Mesin)</option>`;
+  }
+  sel.innerHTML = optionsHtml;
+  sel.style.borderColor = (state.view === 'generalsummary' && isSpvUpUser()) ? GENERAL_SUMMARY_COLOR : currentMachine().color;
 }
 document.getElementById('machineSelect').addEventListener('change', (e) => {
+  if(e.target.value === '__generalsummary__'){
+    // Bukan ganti mesin — cuma pindah tampilan ke General Summary (state.machine tidak berubah).
+    state.view = 'generalsummary';
+    document.querySelectorAll('#tabs button[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === 'generalsummary'));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-generalsummary').classList.add('active');
+    applyAccent();
+    updateMachineSelectVisibility();
+    renderAll();
+    syncFromServer();
+    return;
+  }
   state.machine = e.target.value;
   applyAccent();
   renderMachinePicker();
@@ -2207,23 +2341,30 @@ document.getElementById('machineSelect').addEventListener('change', (e) => {
   syncMasterFromServer();
   document.getElementById('problemRows').innerHTML = '';
   addProblemRow();
+  document.getElementById('ngRows').innerHTML = '';
+  addNgRow();
   recomputeStrip();
   renderAll();
-  if(state.view === 'riwayat' || state.view === 'dashboard' || state.view === 'summary'){
+  if(state.view === 'riwayat' || state.view === 'dashboard' || state.view === 'summary' || state.view === 'generalsummary'){
     syncFromServer();
   }
 });
+// Warna khusus untuk "General Summary" di dropdown pilih mesin — biru, belum dipakai
+// mesin manapun (1600TR=teal, 2500TR=pink, 800BP=merah, 300BP=ungu), biar jelas beda konteks.
+const GENERAL_SUMMARY_COLOR = '#3b82f6';
+
 function applyAccent(){
   const m = currentMachine();
-  document.documentElement.style.setProperty('--accent', m.color);
-  document.getElementById('brandDot').style.background = m.color;
+  const color = (state.view === 'generalsummary' && isSpvUpUser()) ? GENERAL_SUMMARY_COLOR : m.color;
+  document.documentElement.style.setProperty('--accent', color);
+  document.getElementById('brandDot').style.background = color;
   const nameEl = document.getElementById('activeMachineName');
-  if(nameEl) nameEl.textContent = m.label;
+  if(nameEl) nameEl.textContent = (state.view === 'generalsummary' && isSpvUpUser()) ? 'General Summary' : m.label;
 
   const titleBar = document.getElementById('activeMachineTitle');
   if(titleBar){
-    titleBar.style.background = `color-mix(in srgb, ${m.color} 16%, var(--panel-2))`;
-    titleBar.style.borderColor = `color-mix(in srgb, ${m.color} 45%, var(--border))`;
+    titleBar.style.background = `color-mix(in srgb, ${color} 16%, var(--panel-2))`;
+    titleBar.style.borderColor = `color-mix(in srgb, ${color} 45%, var(--border))`;
   }
 }
 
@@ -2248,9 +2389,11 @@ document.getElementById('tabs').addEventListener('click', (e) => {
   document.getElementById('view-' + state.view).classList.add('active');
   const productionFolder = document.getElementById('productionFolder');
   if(productionFolder && productionFolder.contains(btn)) productionFolder.classList.add('expanded');
+  applyAccent(); // ikutkan warna khusus General Summary kalau lagi pindah ke/dari view itu
+  renderMachinePicker(); // sinkronkan dropdown pilih mesin (mis. balik dari General Summary ke mesin aktif)
   updateMachineSelectVisibility();
   renderAll();
-  if(state.view === 'riwayat' || state.view === 'dashboard' || state.view === 'summary'){
+  if(state.view === 'riwayat' || state.view === 'dashboard' || state.view === 'summary' || state.view === 'generalsummary'){
     syncFromServer();
   }
 });
@@ -2296,6 +2439,58 @@ function getProblemRows(){
     keterangan: row.querySelector('.p-keterangan').value.trim(),
     menit: Number(row.querySelector('.p-menit').value) || 0,
   }));
+}
+
+/** Jenis NG (Scrap) — satu item produksi bisa punya lebih dari satu jenis NG sekaligus,
+ *  masing-masing dengan Qty sendiri (lihat getNgRows()/Total Qty Scrap NG di recomputeStrip). */
+let ngRowCount = 0;
+function addNgRow(data){
+  data = data || { jenis: '', qty: '' };
+  const id = 'ng' + (ngRowCount++);
+  const list = getMasterList(state.machine, 'scrap');
+  const addNewOption = isAdminUser() ? '<option value="__new__">+ Tambah Baru...</option>' : '';
+  const row = document.createElement('div');
+  row.className = 'ng-row';
+  row.dataset.rowId = id;
+  row.innerHTML = `
+    <select class="ng-jenis">
+      <option value="">— Pilih Jenis NG —</option>
+      ${list.map(v => `<option value="${escapeHtml(v)}" ${v===data.jenis?'selected':''}>${escapeHtml(v)}</option>`).join('')}
+      ${addNewOption}
+    </select>
+    <input type="number" class="ng-qty" placeholder="Qty" min="0" value="${data.qty}">
+    <button type="button" class="icon-btn" title="Hapus">×</button>
+  `;
+  row.querySelector('.icon-btn').addEventListener('click', () => { row.remove(); recomputeStrip(); });
+  row.querySelector('.ng-qty').addEventListener('input', recomputeStrip);
+  const selectEl = row.querySelector('.ng-jenis');
+  selectEl.addEventListener('change', () => {
+    if(selectEl.value !== '__new__'){ recomputeStrip(); return; }
+    const val = window.prompt('Masukkan jenis NG baru:');
+    if(val && val.trim()){
+      const trimmed = val.trim();
+      addMasterValue(state.machine, 'scrap', trimmed);
+      const opt = document.createElement('option');
+      opt.value = trimmed; opt.textContent = trimmed;
+      selectEl.insertBefore(opt, selectEl.lastElementChild);
+      selectEl.value = trimmed;
+      if(getConfig().scriptUrl){
+        apiAddMaster('scrap', trimmed).catch(err => toast('Gagal simpan ke Sheets: ' + err.message));
+      }
+    } else { selectEl.value = ''; }
+    recomputeStrip();
+  });
+  document.getElementById('ngRows').appendChild(row);
+}
+document.getElementById('addNgBtn').addEventListener('click', () => addNgRow());
+
+function getNgRows(){
+  return Array.from(document.querySelectorAll('#ngRows .ng-row'))
+    .map(row => ({
+      jenis: row.querySelector('.ng-jenis').value.trim(),
+      qty: Number(row.querySelector('.ng-qty').value) || 0,
+    }))
+    .filter(r => r.jenis || r.qty); // baris yang benar2 kosong (belum diisi apa2) diabaikan
 }
 
 /* ============================================================
@@ -2397,15 +2592,25 @@ function recomputeStrip(){
   // (5) Total Line Stop (menit) = total waktu Machine+Dies+Finger+Misgrip+Material+Others (TIDAK termasuk Terplanning)
   const lineStop = problemRowsData.reduce((sum,p) => sum + p.menit, 0);
   renderCategoryBreakdown(problemRowsData);
+  // Total Qty Scrap NG = penjumlahan otomatis semua baris Jenis NG (lihat getNgRows()/addNgRow())
+  const ngRowsData = getNgRows();
+  const totalQtyNg = ngRowsData.reduce((sum,r) => sum + r.qty, 0);
+  document.getElementById('f_qtyng').value = totalQtyNg;
   // (6) Waktu Efektif = Total Produksi (menit) - Total Line Stop (menit) - Waktu Line Stop Terplanning (menit) - Waktu Dandori (menit)
   const efektif = Math.max(totalMenit - lineStop - stopTerencana - dandori, 0);
-  const pctLineStop = totalMenit ? Math.round(((lineStop + stopTerencana)/totalMenit)*100) : 0;
-  // (4) % Dandori = Waktu Dandori (menit) / Total Produksi (menit)
-  const pctDandori = totalMenit ? Math.round((dandori/totalMenit)*100) : 0;
+  // Basis waktu SAMA untuk % Produksi, % Dandori, % Line Stop = "waktu tersedia" (Total Produksi
+  // dikurangi Line Stop Terencana). Line Stop Terencana ditampilkan TERPISAH (pctStopTerplan, basis
+  // Total Produksi penuh) supaya tidak tumpang tindih. Kalau tidak ada Line Stop (tak terencana),
+  // % Produksi + % Dandori otomatis = 100%.
+  const waktuTersedia = Math.max(totalMenit - stopTerencana, 0);
+  // (5) % Line Stop = HANYA Line Stop TAK terencana (Machine/Dies/Finger/Misgrip/Material/Others)
+  const pctLineStop = waktuTersedia ? Math.round((lineStop/waktuTersedia)*100) : 0;
+  // (4) % Dandori = Waktu Dandori (menit) / waktu tersedia
+  const pctDandori = waktuTersedia ? Math.round((dandori/waktuTersedia)*100) : 0;
   const pctStopTerplan = totalMenit ? Math.round((stopTerencana/totalMenit)*100) : 0;
 document.getElementById('f_pctstopterplan').value = pctStopTerplan + '%';
-  // (7) % Efisiensi = Waktu Efektif / (Total Produksi (menit) - Waktu Line Stop Terplanning (menit))
-  const pctEfisiensiDenom = totalMenit;
+  // (7) % Produksi = Waktu Efektif / waktu tersedia (basis sama dgn Dandori & Line Stop di atas)
+  const pctEfisiensiDenom = waktuTersedia;
 const pctEfisiensi = pctEfisiensiDenom > 0 ? Math.round((efektif/pctEfisiensiDenom)*100) : 0;
   // (1) SPM Kajuhekin = Actual Produksi (Stroke) / Waktu Efektif (menit)
   const spmKajuhekin = efektif > 0 ? Math.round(stroke/efektif) : 0;
@@ -2426,13 +2631,14 @@ const pctEfisiensi = pctEfisiensiDenom > 0 ? Math.round((efektif/pctEfisiensiDen
 
   const planning = Number(document.getElementById('f_planning').value) || 0;
   const statusPilihan = document.getElementById('f_status').value;
-  const statusLive = statusPilihan === 'auto' ? computeAutoStatus(stroke, planning) : statusPilihan;
+  const pcsokForStatus = Number(document.getElementById('f_pcsok').value) || 0;
+  const statusLive = statusPilihan === 'auto' ? computeAutoStatus(pcsokForStatus, planning) : statusPilihan;
   document.getElementById('f_status_live').value = statusLive;
 
   return { totalMenit, totalJam: Number(totalJam), stopTerencana, stopTakTerencana: lineStop,
   lineStop, efektif, pctLineStop, pctDandori, pctEfisiensi, pctStopTerplan };
 }
-['f_jammulai','f_jamselesai','f_dandori','f_stopterplan_menit','f_stroke','f_planning','f_tanggal'].forEach(id => {
+['f_jammulai','f_jamselesai','f_dandori','f_stopterplan_menit','f_stroke','f_planning','f_tanggal','f_pcsok','f_material'].forEach(id => {
   document.getElementById(id).addEventListener('input', recomputeStrip);
 });
 document.getElementById('f_status').addEventListener('change', recomputeStrip);
@@ -2444,6 +2650,9 @@ function resetForm(){
   document.getElementById('entryForm').reset();
   document.getElementById('entryId').value = '';
   document.getElementById('problemRows').innerHTML = '';
+  document.getElementById('ngRows').innerHTML = '';
+  addNgRow(); // selalu mulai dengan 1 baris kosong, biar operator langsung bisa isi
+  document.getElementById('f_alasan_tidaksesuai').value = '';
   document.getElementById('f_tanggal').value = localDateStr(new Date());
   document.getElementById('submitBtn').textContent = 'Simpan Laporan';
   currentPartMax = null;              // ← tambah baris ini
@@ -2472,16 +2681,16 @@ function escapeHtml(str){
   return String(str||'').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
 }
 
-function computeAutoStatus(stroke, planning){
-  const ratio = planning > 0 ? stroke / planning : 1;
-  if(ratio >= 1.05) return 'Over Produksi';
-  if(ratio <= 0.95) return 'Produksi kurang!';
-  return 'Produksi Sesuai';
+/** Pencapaian (%) = Actual Produksi (Pcs OK) / Planning x 100%. Toleransi +-10%:
+ *  90% - 110% (termasuk lebih dari 110%) = Sesuai. Di bawah 90% = Tidak Sesuai. */
+function computeAutoStatus(pcsok, planning){
+  const pencapaian = planning > 0 ? (pcsok/planning)*100 : 100;
+  return pencapaian >= 90 ? 'Produksi Sesuai' : 'Produksi kurang!';
 }
 function statusFor(entry){
   if(entry.status && entry.status !== 'auto') return entry.status;
-  // (3) Status Produksi = perbandingan Actual Produksi (Stroke) vs Planning Produksi (pcs)
-  return computeAutoStatus(entry.stroke, entry.planning);
+  // (3) Status Produksi = perbandingan Actual Produksi (Pcs OK) vs Planning Produksi (pcs)
+  return computeAutoStatus(entry.pcsok, entry.planning);
 }
 
 /** Cek duplikat (Tanggal+Shift+Part yang sama) & lonjakan Actual Produksi vs Planning.
@@ -2517,6 +2726,26 @@ document.getElementById('entryForm').addEventListener('submit', (e) => {
   const jamSelesaiVal = document.getElementById('f_jamselesai').value;
   if(jamMulaiVal && jamSelesaiVal && computed.totalMenit === 0){
     toast('Total durasi produksi = 0 menit. Cek lagi Jam Mulai & Jam Selesai, sepertinya salah input.');
+    return;
+  }
+
+  // BLOK KERAS: Actual Produksi (Pcs OK) vs Material Digunakan — kalau Pcs OK lebih kecil dari
+  // Material, selisihnya WAJIB sudah tercatat di Total Qty Scrap NG (jumlah semua baris Jenis NG).
+  const materialVal = Number(document.getElementById('f_material').value) || 0;
+  const pcsokVal = Number(document.getElementById('f_pcsok').value) || 0;
+  const totalNgVal = getNgRows().reduce((s,r) => s + r.qty, 0);
+  if(materialVal > pcsokVal){
+    const selisih = materialVal - pcsokVal;
+    if(totalNgVal < selisih){
+      toast('Jumlah produksi OK lebih kecil dari jumlah material yang digunakan. Harap input selisihnya pada kolom Qty Scrap NG sebelum menyimpan data.');
+      return;
+    }
+  }
+
+  // BLOK KERAS: Alasan wajib diisi — baik status Sesuai maupun Tidak Sesuai (lihat PDF Perbaikan_Script poin 4).
+  const alasanVal = document.getElementById('f_alasan_tidaksesuai').value.trim();
+  if(!alasanVal){
+    toast('Kolom Alasan wajib diisi sebelum menyimpan data (misal: "Produksi sesuai planning" kalau memang sesuai).');
     return;
   }
 
@@ -2566,8 +2795,10 @@ document.getElementById('confirmSaveBtn').addEventListener('click', async () => 
     stroke: Number(document.getElementById('f_stroke').value) || 0,
     pcsok: Number(document.getElementById('f_pcsok').value) || 0,
 frekCoolant: document.getElementById('f_frekcoolant').value,
-jenisScrap: document.getElementById('f_jenisscrap').value.trim(),
-    qtyNg: Number(document.getElementById('f_qtyng').value) || 0,
+    ngRows: getNgRows(),
+    jenisScrap: getNgRows().map(r => r.jenis).filter(Boolean).join(', '),
+    qtyNg: getNgRows().reduce((s,r) => s + r.qty, 0),
+    alasanTidakSesuai: document.getElementById('f_alasan_tidaksesuai').value.trim(),
     spm: Number(document.getElementById('f_spm').value) || 0,
     spmKajuhekin: Number(document.getElementById('f_spmkajuhekin').value) || 0,
     gsph: document.getElementById('f_gsph').value ? Number(document.getElementById('f_gsph').value) : null,
@@ -2799,16 +3030,21 @@ function editEntry(id){
   document.getElementById('f_shift').value = entry.shift;
   addMasterValue(state.machine, 'pic', entry.pic);
   addMasterValue(state.machine, 'part', entry.part);
-  if(entry.jenisScrap) addMasterValue(state.machine, 'scrap', entry.jenisScrap);
-  refreshMasterSelects(entry.pic, entry.part, entry.jenisScrap);
+  (entry.jenisScrap||'').split(',').map(s=>s.trim()).filter(Boolean).forEach(s => addMasterValue(state.machine, 'scrap', s));
+  refreshMasterSelects(entry.pic, entry.part);
   document.getElementById('f_planning').value = entry.planning;
   document.getElementById('f_material').value = entry.material;
   document.getElementById('f_stroke').value = entry.stroke;
   document.getElementById('f_pcsok').value = entry.pcsok;
   document.getElementById('f_frekcoolant').value = entry.frekCoolant;   // ← tambah baris ini
-  document.getElementById('f_jenisscrap').value = entry.jenisScrap;
 updatePartMaxAndValidate();   // ← tambah baris ini
-  document.getElementById('f_qtyng').value = entry.qtyNg;
+  document.getElementById('f_alasan_tidaksesuai').value = entry.alasanTidakSesuai || '';
+  document.getElementById('ngRows').innerHTML = '';
+  // Data lama (sebelum multi-NG) cuma punya jenisScrap+qtyNg tunggal -> fallback jadi 1 baris.
+  const ngRowsToLoad = (Array.isArray(entry.ngRows) && entry.ngRows.length)
+    ? entry.ngRows
+    : (entry.jenisScrap ? [{ jenis: entry.jenisScrap, qty: entry.qtyNg || 0 }] : []);
+  if(ngRowsToLoad.length){ ngRowsToLoad.forEach(r => addNgRow(r)); } else { addNgRow(); }
   document.getElementById('f_spm').value = entry.spm;
   document.getElementById('f_spmkajuhekin').value = entry.spmKajuhekin ?? '';
   document.getElementById('f_gsph').value = entry.gsph ?? '';
@@ -2920,49 +3156,27 @@ function printDailyReport(){
   let html = `
     <h2 style="text-align:center; margin-bottom:4px;">LAPORAN PRODUKSI HARIAN</h2>
     <p style="text-align:center; margin-top:0;">Mesin: <b>${escapeHtml(mesinLabel)}</b> &mdash; Periode: ${escapeHtml(rangeLabel)}</p>
-    <table style="width:100%; border-collapse:collapse; font-size:6.5px; margin-top:10px;" border="1" cellpadding="2">
+    <table style="width:100%; border-collapse:collapse; font-size:11px; margin-top:14px;" border="1" cellpadding="4">
       <thead>
         <tr>
-          <th>Tanggal</th><th>Waktu Input</th><th>Shift</th><th>PIC</th><th>Part Nomor</th>
-          <th>Planning</th><th>Material</th><th>Stroke</th><th>Pcs OK</th>
-          <th>Jenis Scrap</th><th>Qty NG</th><th>SPM</th><th>SPM Kajuhekin</th>
-          <th>GSPH</th><th>Status</th><th>Jam Mulai</th><th>Jam Selesai</th>
-          <th>Total (Jam)</th><th>Total (Menit)</th><th>Dandori</th><th>%Dandori</th>
-          <th>Stop Terplan</th><th>Menit Terplan</th><th>%Stop Terplan</th>
-          <th>Total Line Stop</th><th>%Line Stop</th><th>Waktu Efektif</th><th>%Efisiensi</th>
+          <th>Tanggal</th><th>Shift</th><th>PIC</th><th>Part Nomor</th><th>Planning</th>
+          <th>Stroke</th><th>Pcs OK</th><th>Qty NG</th><th>GSPH</th><th>Status</th><th>Jam</th>
         </tr>
       </thead>
       <tbody>`;
   entries.forEach(e => {
     html += `<tr>
       <td>${e.tanggal}</td>
-      <td>${formatDateTimeValue(e.waktuInput)}</td>
       <td>${e.shift === 'BLUE' ? 'Biru' : 'Merah'}</td>
       <td>${escapeHtml(e.pic)}</td>
       <td>${escapeHtml(e.part)}</td>
       <td>${e.planning}</td>
-      <td>${e.material}</td>
       <td>${e.stroke}</td>
       <td>${e.pcsok}</td>
-      <td>${escapeHtml(e.jenisScrap || '-')}</td>
       <td>${e.qtyNg}</td>
-      <td>${e.spm}</td>
-      <td>${e.spmKajuhekin}</td>
       <td>${e.gsph ?? 0}</td>
       <td>${escapeHtml(e.statusLabel || '-')}</td>
-      <td>${e.jamMulai || '-'}</td>
-      <td>${e.jamSelesai || '-'}</td>
-      <td>${e.computed.totalJam}</td>
-      <td>${e.computed.totalMenit}</td>
-      <td>${e.dandori}</td>
-      <td>${e.computed.pctDandori}%</td>
-      <td>${escapeHtml(e.stopTerplanJenis || '-')}</td>
-      <td>${e.stopTerplanMenit}</td>
-      <td>${e.computed.pctStopTerplan}%</td>
-      <td>${e.computed.lineStop}</td>
-      <td>${e.computed.pctLineStop}%</td>
-      <td>${e.computed.efektif}</td>
-      <td>${e.computed.pctEfisiensi}%</td>
+      <td>${e.jamMulai || '-'} - ${e.jamSelesai || '-'}</td>
     </tr>`;
   });
   html += `</tbody></table>
@@ -3006,10 +3220,7 @@ document.getElementById('summaryFilterResetBtn').addEventListener('click', () =>
   ['summaryFilterTargetProduksiItem', 'produksiItem'],
   ['summaryFilterTargetNgPart', 'ngPart'],
   ['summaryFilterTargetNgJenis', 'ngJenis'],
-  ['summaryFilterTargetLineStop1600TR', 'lineStop1600TR'],
-  ['summaryFilterTargetLineStop2500TR', 'lineStop2500TR'],
-  ['summaryFilterTargetLineStop800BP', 'lineStop800BP'],
-  ['summaryFilterTargetLineStop300BP', 'lineStop300BP'],
+  ['summaryFilterTargetLineStop', 'lineStop'],
 ].forEach(([elId, key]) => {
   document.getElementById(elId).addEventListener('change', (ev) => {
     state.summaryFilter.targets[key] = ev.target.checked;
@@ -3059,15 +3270,8 @@ document.getElementById('exportNgJenisCsvBtn').addEventListener('click', () => {
   const rangeLabel = applyFilter ? `${filterFrom || 'awal'}_sd_${filterTo || 'akhir'}` : 'semua-data';
   exportTableToCsv(cols, rows, `summary-ng-per-jenis-pareto-${rangeLabel}`);
 });
-[
-  ['1600TR', 'summaryFilterTargetLineStop1600TR', 'exportLineStop1600TRCsvBtn'],
-  ['2500TR', 'summaryFilterTargetLineStop2500TR', 'exportLineStop2500TRCsvBtn'],
-  ['800BP', 'summaryFilterTargetLineStop800BP', 'exportLineStop800BPCsvBtn'],
-  ['300BP', 'summaryFilterTargetLineStop300BP', 'exportLineStop300BPCsvBtn'],
-].forEach(([machineId, checkboxId, btnId]) => {
-  document.getElementById(btnId).addEventListener('click', () => {
-    exportLineStopTableLive(machineId, checkboxId, `summary-line-stop-${machineId}`);
-  });
+document.getElementById('exportLineStopSelectedCsvBtn').addEventListener('click', () => {
+  exportLineStopTableLive(state.machine, 'summaryFilterTargetLineStop', `summary-line-stop-${state.machine}`);
 });
 
 /* ============================================================
@@ -3087,7 +3291,10 @@ function localDateStr(d){
   return `${y}-${m}-${day}`;
 }
 
-const DASHBOARD_RANGE_LABEL = { today: '(Hari Ini)', yesterday: '(Kemarin)', week: '(7 Hari Terakhir)' };
+const DASHBOARD_RANGE_LABEL = {
+  today: '(Hari Ini)', yesterday: '(Kemarin)', week: '(7 Hari Terakhir)',
+  month: '(1 Bulan Terakhir)', monthtodate: '(Bulan Berjalan)',
+};
 function resolveDashboardRange(rangeKey){
   const today = new Date(); today.setHours(0,0,0,0);
   const toStr = localDateStr;
@@ -3100,23 +3307,37 @@ function resolveDashboardRange(rangeKey){
     for(let i=6;i>=0;i--){ const d = new Date(today); d.setDate(d.getDate()-i); days.push(toStr(d)); }
     return days;
   }
-  return [toStr(today)];
-}
-function previousDashboardRange(rangeKey){
-  // Rentang pembanding: periode sebelumnya dengan panjang yang sama, untuk hitung tren naik/turun.
-  const today = new Date(); today.setHours(0,0,0,0);
-  const toStr = localDateStr;
-  if(rangeKey === 'yesterday'){
-    const y = new Date(today); y.setDate(y.getDate()-2);
-    return [toStr(y)];
-  }
-  if(rangeKey === 'week'){
+  if(rangeKey === 'month'){
+    // "1 Bulan Terakhir": satu bulan ke belakang dari hari ini (rolling), termasuk hari ini.
+    const start = new Date(today); start.setMonth(start.getMonth()-1); start.setDate(start.getDate()+1);
     const days = [];
-    for(let i=13;i>=7;i--){ const d = new Date(today); d.setDate(d.getDate()-i); days.push(toStr(d)); }
+    for(let d = new Date(start); d <= today; d.setDate(d.getDate()+1)){ days.push(toStr(d)); }
     return days;
   }
-  const y = new Date(today); y.setDate(y.getDate()-1);
-  return [toStr(y)];
+  if(rangeKey === 'monthtodate'){
+    // "Bulan Berjalan": tanggal 1 bulan ini sampai hari ini.
+    const start = new Date(today.getFullYear(), today.getMonth(), 1);
+    const days = [];
+    for(let d = new Date(start); d <= today; d.setDate(d.getDate()+1)){ days.push(toStr(d)); }
+    return days;
+  }
+  return [toStr(today)];
+}
+/** Rentang pembanding (buat hitung tren naik/turun): N hari tepat SEBELUM tanggal
+ *  paling awal di rentang saat ini, N = panjang rentang saat ini. Berlaku generik untuk
+ *  semua pilihan periode (Hari Ini/Kemarin/7 Hari/1 Bulan/Bulan Berjalan) sekaligus. */
+function previousDashboardRange(rangeKey){
+  const curDays = resolveDashboardRange(rangeKey);
+  if(!curDays.length) return [];
+  const n = curDays.length;
+  const startDate = new Date(curDays[0] + 'T00:00:00');
+  const toStr = localDateStr;
+  const days = [];
+  for(let i = n; i >= 1; i--){
+    const d = new Date(startDate); d.setDate(d.getDate()-i);
+    days.push(toStr(d));
+  }
+  return days;
 }
 /** Set badge tren (naik/turun) di sebuah kartu HMI. invertGood=true berarti "turun" itu bagus
  *  (misalnya untuk NG, Dandori%, Line Stop% — makin kecil makin baik). */
@@ -3764,11 +3985,12 @@ const groupedOpts = {
       const mEntries = getEntries(m.id).filter(e => rangeSet.has(e.tanggal));
       const mStroke = mEntries.reduce((s,e)=> s+e.stroke, 0);
       const mNg = mEntries.reduce((s,e)=> s+e.qtyNg, 0);
+      const mProduksiJam = (mEntries.reduce((s,e)=> s+(e.computed.totalJam||0), 0)).toFixed(1);
+      const mProduksiItem = mEntries.length; // label kolom "Total Produksi (Item)", tapi isinya frekuensi laporan/dandori (sama seperti Frek. Dandori sebelumnya)
       const mLineStopJam = (mEntries.reduce((s,e)=> s+e.computed.lineStop, 0)/60).toFixed(1);
       const mGsph = gsphOf(mEntries);
-      const mDandoriFreq = mEntries.length; // frekuensi laporan/dandori, sama polanya dengan "Frek. Dandori" di Summary
       const isActive = m.id === state.machine;
-      return `<tr${isActive ? ' style="background:var(--panel-2); font-weight:700;"' : ''}><td>${escapeHtml(m.label)}${isActive ? ' <span style="font-size:10px; color:var(--text-faint); font-weight:400;">(aktif)</span>' : ''}</td><td>${m.target ?? '-'}</td><td>${mGsph.toLocaleString('id-ID')}</td><td>${mStroke.toLocaleString('id-ID')}</td><td>${mDandoriFreq}</td><td>${mNg.toLocaleString('id-ID')}</td><td>${mLineStopJam}</td></tr>`;
+      return `<tr${isActive ? ' style="background:var(--panel-2); font-weight:700;"' : ''}><td>${escapeHtml(m.label)}${isActive ? ' <span style="font-size:10px; color:var(--text-faint); font-weight:400;">(aktif)</span>' : ''}</td><td>${m.target ?? '-'}</td><td>${mGsph.toLocaleString('id-ID')}</td><td>${mStroke.toLocaleString('id-ID')}</td><td>${mProduksiJam}</td><td>${mProduksiItem.toLocaleString('id-ID')}</td><td>${mNg.toLocaleString('id-ID')}</td><td>${mLineStopJam}</td></tr>`;
     });
     overviewBody.innerHTML = rows.join('');
   }
@@ -4080,20 +4302,10 @@ function renderSummary(){
   const aggAll = aggregateEntries(allEntries);
   const aggFiltered = hasFilter ? aggregateEntries(filteredEntries) : aggAll;
 
-  const lineStopMachineIds = ['1600TR','2500TR','800BP','300BP'];
-  const lineStopEntries = {};
-  const lineStopIsFiltered = {};
-  lineStopMachineIds.forEach(mId => {
-    const key = 'lineStop' + mId;
-    let mEntries = getEntries(mId).slice().sort((a,b)=> a.tanggal.localeCompare(b.tanggal));
-    const useFilter = targets[key] && hasFilter;
-    if(useFilter){
-      if(filterFrom) mEntries = mEntries.filter(e => e.tanggal >= filterFrom);
-      if(filterTo) mEntries = mEntries.filter(e => e.tanggal <= filterTo);
-    }
-    lineStopEntries[mId] = mEntries;
-    lineStopIsFiltered[mId] = useFilter;
-  });
+  // Summary Line Stop sekarang cuma 1 tabel, DINAMIS ikut mesin yang sedang dipilih di sidebar
+  // (state.machine) — bukan lagi 4 tabel fixed untuk ke-4 mesin sekaligus.
+  const lineStopUseFilter = targets.lineStop && hasFilter;
+  const lineStopEntries = lineStopUseFilter ? filteredEntries : allEntries;
 
   renderSummaryTables({
     gsph: (targets.gsph && hasFilter) ? aggFiltered : aggAll,
@@ -4106,10 +4318,8 @@ function renderSummary(){
     produksiItem: targets.produksiItem && hasFilter,
     ngPart: targets.ngPart && hasFilter,
     ngJenis: targets.ngJenis && hasFilter,
-    lineStop: lineStopIsFiltered,
+    lineStop: lineStopUseFilter,
   }, filterFrom, filterTo);
-
-  renderMonthlyMachineTables();
 }
 
 function renderSummaryTables(data, isFiltered, filterFrom, filterTo){
@@ -4182,19 +4392,21 @@ function renderSummaryTables(data, isFiltered, filterFrom, filterTo){
     produksiItemBody.innerHTML = emptyRow(8);
   }
 
-  ['1600TR','2500TR','800BP','300BP'].forEach(mId => {
-    setBadge(`lineStop${mId}FilterBadge`, isFiltered.lineStop[mId]);
-    const body = document.getElementById(`tblLineStop${mId}`);
-    if(!body) return;
-    const { rows } = buildLineStopTableData(data.lineStop[mId]);
+  // Summary Line Stop: 1 tabel dinamis untuk mesin yang sedang aktif (state.machine)
+  const lineStopLabelEl = document.getElementById('lineStopSelectedMachineLabel');
+  if(lineStopLabelEl) lineStopLabelEl.textContent = 'Mc. ' + state.machine;
+  setBadge('lineStopSelectedFilterBadge', isFiltered.lineStop);
+  const lineStopBody = document.getElementById('tblLineStopSelected');
+  if(lineStopBody){
+    const { rows } = buildLineStopTableData(data.lineStop || []);
     if(rows.length){
       const totalMenit = rows.reduce((s,r) => s + (r[4]||0), 0);
       const totalRowHtml = `<tr style="font-weight:700; background:var(--panel-2);"><td colspan="4" style="text-align:right;">Total</td><td>${totalMenit}</td><td colspan="2"></td></tr>`;
-      body.innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${escapeHtml(String(r[2]))}</td><td>${r[3]}</td><td>${r[4]}</td><td>${escapeHtml(String(r[5]))}</td><td>${escapeHtml(String(r[6]))}</td></tr>`).join('') + totalRowHtml;
+      lineStopBody.innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${escapeHtml(String(r[2]))}</td><td>${r[3]}</td><td>${r[4]}</td><td>${escapeHtml(String(r[5]))}</td><td>${escapeHtml(String(r[6]))}</td></tr>`).join('') + totalRowHtml;
     } else {
-      body.innerHTML = emptyRow(7);
+      lineStopBody.innerHTML = emptyRow(7);
     }
-  });
+  }
 }
 
 /** Nama bulan pendek untuk header tabel bulanan (index 0 = Januari). */
@@ -4279,9 +4491,64 @@ function buildMonthlyMachineData(year){
  *  hanya dari bulan yang benar-benar ada produksinya (totalJamSum > 0), bukan dibagi 12, supaya bulan
  *  yang belum berjalan/belum ada datanya tidak menurunkan rata-rata secara tidak wajar. Nama mesin
  *  di kolom pertama diwarnai sama seperti warna aksen mesin itu di halaman Entry Data. */
+/** Render 4 kartu (satu per mesin, warna kartu ikut warna aksen mesin masing-masing) di atas
+ *  1 tabel — dipakai bareng oleh tabel Bulanan & Harian di General Summary. Nilainya = angka
+ *  "Rata-rata" mesin itu untuk periode yang sedang dipilih (persis sama dengan kolom Rata-rata
+ *  di baris mesin itu pada tabel di bawahnya). */
+/** computeRataRataAllMetrics_(): dari 1 objek `data` (hasil buildMonthlyMachineData atau
+ *  buildDailyMachineData), hitung Rata-rata GSPH/Stroke/LineStop/NG per mesin sekaligus —
+ *  dipakai untuk kartu periode SEKARANG maupun periode SEBELUMNYA (buat badge tren). */
+function computeRataRataAllMetrics_(machineIds, data){
+  const result = { gsph: {}, stroke: {}, lineStop: {}, ng: {} };
+  machineIds.forEach(mId => {
+    const buckets = data[mId] || [];
+    const gsphVals = buckets.map(b => b.totalJamSumWeekday > 0 ? Math.round(b.strokeSumWeekday / b.totalJamSumWeekday) : null).filter(v => v !== null);
+    result.gsph[mId] = gsphVals.length ? Math.round(gsphVals.reduce((a,b) => a+b, 0) / gsphVals.length) : null;
+
+    const activeBuckets = buckets.filter(b => b.totalJamSum > 0);
+    const avgOf = getVal => activeBuckets.length ? Math.round(activeBuckets.reduce((a,b) => a + getVal(b), 0) / activeBuckets.length) : null;
+    result.stroke[mId] = avgOf(b => b.strokeSum || 0);
+    result.lineStop[mId] = avgOf(b => b.lineStopMenitSum || 0);
+    result.ng[mId] = avgOf(b => b.ngSum || 0);
+  });
+  return result;
+}
+
+/** Kartu kecil per-mesin di atas tiap tabel General Summary, lengkap badge tren (naik/turun)
+ *  dibanding periode sebelumnya (bulan lalu untuk tabel Harian, tahun lalu untuk tabel Bulanan).
+ *  invertGood=true berarti "turun" itu bagus (NG, Line Stop) — sama konvensinya dengan setTrend(). */
+function renderMachineCardsRow(containerId, icon, valueByMachine, prevValueByMachine, invertGood){
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  el.innerHTML = MACHINES.map(m => {
+    const val = valueByMachine[m.id];
+    const display = (val === null || val === undefined) ? '-' : Number(val).toLocaleString('id-ID');
+    const prevVal = prevValueByMachine ? prevValueByMachine[m.id] : null;
+    let trendHtml = '';
+    if(val !== null && val !== undefined && prevVal !== null && prevVal !== undefined && prevVal !== 0){
+      const diffPct = Math.round(((val - prevVal) / prevVal) * 100);
+      if(diffPct === 0){
+        trendHtml = `<span style="display:block; font-size:8px; margin-top:1px; opacity:.75;">&plusmn; 0%</span>`;
+      } else {
+        const isUp = diffPct > 0;
+        const isGood = invertGood ? !isUp : isUp;
+        trendHtml = `<span style="display:block; font-size:8px; font-weight:700; margin-top:1px; color:${isGood ? '#baf7c2' : '#ffc9c2'};">${isUp ? '&#9650;' : '&#9660;'} ${Math.abs(diffPct)}%</span>`;
+      }
+    }
+    return `<div class="hmi-card-compact" style="background: linear-gradient(135deg, ${m.color}, color-mix(in srgb, ${m.color} 68%, black));">
+      <div class="hmi-value">${display}</div>
+      <div class="hmi-label">${m.label} (Rata-rata)</div>
+      ${trendHtml}
+      <div class="hmi-icon">${icon}</div>
+    </div>`;
+  }).join('');
+}
+
 function renderMonthlyMachineTables(){
   ensureMonthlyMachineYearOptions();
   const { currentYear, machineIds, data } = buildMonthlyMachineData(monthlyMachineYear);
+  // Data tahun SEBELUMNYA, cuma buat pembanding tren naik/turun di kartu (tidak dirender ke tabel).
+  const prevMetrics = computeRataRataAllMetrics_(machineIds, buildMonthlyMachineData(currentYear - 1).data);
 
   document.getElementById('gsphBulanMesinTitle').textContent = `GSPH/BULAN/MESIN - TAHUN ${currentYear}`;
   document.getElementById('strokeBulanMesinTitle').textContent = `STROKE/BULAN/MESIN - TAHUN ${currentYear}`;
@@ -4316,6 +4583,9 @@ function renderMonthlyMachineTables(){
     strokeBody.innerHTML = plainEmpty;
     lineStopBody.innerHTML = plainEmpty;
     ngBody.innerHTML = plainEmpty;
+    ['gsphBulanMesinCards','strokeBulanMesinCards','lineStopBulanMesinCards','ngBulanMesinCards'].forEach(id => {
+      const el = document.getElementById(id); if(el) el.innerHTML = '';
+    });
     return;
   }
 
@@ -4325,31 +4595,43 @@ function renderMonthlyMachineTables(){
     return `<td style="color:${color}; font-weight:600;">${mId}</td>`;
   };
 
+  const gsphRataRataByMachine = {};
   gsphBody.innerHTML = machineIds.map(mId => {
     const target = (MACHINES.find(m => m.id === mId) || {}).target || 0;
     const monthlyGsph = data[mId].map(b => b.totalJamSumWeekday > 0 ? Math.round(b.strokeSumWeekday / b.totalJamSumWeekday) : null);
     const cells = monthlyGsph.map(v => `<td>${v === null ? '-' : v}</td>`).join('');
     const validVals = monthlyGsph.filter(v => v !== null);
     const rataRata = validVals.length ? Math.round(validVals.reduce((a,b) => a+b, 0) / validVals.length) : null;
+    gsphRataRataByMachine[mId] = rataRata;
     const achievement = (rataRata !== null && target > 0) ? Math.round((rataRata / target) * 1000) / 10 : null;
     const achievementCell = achievement === null
       ? '<td>-</td>'
       : `<td style="color:${achievement >= 100 ? 'var(--good)' : 'var(--danger)'}; font-weight:700;">${achievement}%</td>`;
     return `<tr>${machineNameCell(mId)}<td>${target}</td>${cells}<td>${rataRata === null ? '-' : rataRata}</td>${achievementCell}</tr>`;
   }).join('');
+  renderMachineCardsRow('gsphBulanMesinCards', '&#128202;', gsphRataRataByMachine, prevMetrics.gsph, false);
 
-  const buildPlainRow = (mId, getVal) => {
+  const buildPlainRow = (mId, getVal, rataRataStore) => {
     const buckets = data[mId];
     const cells = buckets.map(b => `<td>${getVal(b)}</td>`).join('');
     const activeBuckets = buckets.filter(b => b.totalJamSum > 0);
     const sum = activeBuckets.reduce((a,b) => a + getVal(b), 0);
     const rataRata = activeBuckets.length ? Math.round(sum / activeBuckets.length) : 0;
+    if(rataRataStore) rataRataStore[mId] = rataRata;
     return `<tr>${machineNameCell(mId)}${cells}<td>${rataRata}</td></tr>`;
   };
 
-  strokeBody.innerHTML = machineIds.map(mId => buildPlainRow(mId, b => b.strokeSum || 0)).join('');
-  lineStopBody.innerHTML = machineIds.map(mId => buildPlainRow(mId, b => b.lineStopMenitSum || 0)).join('');
-  ngBody.innerHTML = machineIds.map(mId => buildPlainRow(mId, b => b.ngSum || 0)).join('');
+  const strokeRataRataByMachine = {};
+  strokeBody.innerHTML = machineIds.map(mId => buildPlainRow(mId, b => b.strokeSum || 0, strokeRataRataByMachine)).join('');
+  renderMachineCardsRow('strokeBulanMesinCards', '&#9881;', strokeRataRataByMachine, prevMetrics.stroke, false);
+
+  const lineStopRataRataByMachine = {};
+  lineStopBody.innerHTML = machineIds.map(mId => buildPlainRow(mId, b => b.lineStopMenitSum || 0, lineStopRataRataByMachine)).join('');
+  renderMachineCardsRow('lineStopBulanMesinCards', '&#9203;', lineStopRataRataByMachine, prevMetrics.lineStop, true);
+
+  const ngRataRataByMachine = {};
+  ngBody.innerHTML = machineIds.map(mId => buildPlainRow(mId, b => b.ngSum || 0, ngRataRataByMachine)).join('');
+  renderMachineCardsRow('ngBulanMesinCards', '&#9888;', ngRataRataByMachine, prevMetrics.ng, true);
 }
 
 /** Export salah satu dari ke-4 tabel bulanan ke CSV. metric: 'gsph' | 'stroke' | 'lineStop' | 'ng'.
@@ -4399,12 +4681,235 @@ document.getElementById('exportLineStopBulanMesinCsvBtn').addEventListener('clic
 document.getElementById('exportNgBulanMesinCsvBtn').addEventListener('click', () => exportMonthlyMachineCsv('ng', 'NG-per-Bulan-Mesin'));
 
 /* ============================================================
+   GENERAL SUMMARY — TABEL HARIAN (sama persis strukturnya dengan tabel Bulanan di atas,
+   cuma kolomnya per-TANGGAL dalam 1 bulan terpilih, bukan per-bulan dalam 1 tahun).
+============================================================ */
+const NAMA_BULAN_PANJANG = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+
+/** Bulan yang sedang ditampilkan di 4 tabel harian, format {year, month(1-12)}. Default bulan berjalan. */
+let dailyMachineYear = new Date().getFullYear();
+let dailyMachineMonth = new Date().getMonth() + 1;
+
+function getDaysInMonth_(year, month){
+  return new Date(year, month, 0).getDate();
+}
+
+/** Sinkronkan input[type=month] dengan dailyMachineYear/dailyMachineMonth saat ini,
+ *  tanpa mereset pilihan user kalau memang belum berubah. */
+function ensureDailyMachineMonthInput(){
+  const el = document.getElementById('dailyMachineMonthSelect');
+  if(!el) return;
+  const val = `${dailyMachineYear}-${String(dailyMachineMonth).padStart(2,'0')}`;
+  if(el.value !== val) el.value = val;
+}
+
+/** Sama seperti buildMonthlyMachineData(), tapi dipecah per HARI dalam 1 bulan yang dipilih. */
+function buildDailyMachineData(year, month){
+  const y = year || dailyMachineYear;
+  const mo = month || dailyMachineMonth;
+  const daysInMonth = getDaysInMonth_(y, mo);
+  const machineIds = ['1600TR','2500TR','800BP','300BP'];
+  const data = {};
+
+  machineIds.forEach(mId => {
+    data[mId] = Array.from({ length: daysInMonth }, () => ({
+      strokeSum:0, ngSum:0, totalJamSum:0, lineStopMenitSum:0,
+      strokeSumWeekday:0, totalJamSumWeekday:0,
+    }));
+    const entries = getEntries(mId);
+    entries.forEach(e => {
+      if(!e.tanggal) return;
+      const parts = e.tanggal.split('-');
+      if(parts.length !== 3) return;
+      const ey = parseInt(parts[0], 10);
+      const emo = parseInt(parts[1], 10);
+      const ed = parseInt(parts[2], 10);
+      if(ey !== y || emo !== mo || ed < 1 || ed > daysInMonth) return;
+      const bucket = data[mId][ed - 1];
+      bucket.strokeSum += e.stroke || 0;
+      bucket.ngSum += e.qtyNg || 0;
+      bucket.totalJamSum += (e.computed && e.computed.totalJam) || 0;
+      (e.problems || []).forEach(p => { bucket.lineStopMenitSum += p.menit || 0; });
+      if(!isNonProductionDay(e.tanggal)){
+        bucket.strokeSumWeekday += e.stroke || 0;
+        bucket.totalJamSumWeekday += (e.computed && e.computed.totalJam) || 0;
+      }
+    });
+  });
+
+  return { year: y, month: mo, daysInMonth, machineIds, data };
+}
+
+/** Render ke-4 tabel harian (GSPH, Stroke, Line Stop, NG) — strukturnya identik dengan tabel
+ *  bulanan (Target/Rata-rata/Achievement % di GSPH, Rata-rata di 3 lainnya), cuma kolom hariannya
+ *  per-tanggal (1..akhir bulan) bukan per-bulan (Jan..Des). */
+function renderDailyMachineTables(){
+  ensureDailyMachineMonthInput();
+  const { year, month, daysInMonth, machineIds, data } = buildDailyMachineData(dailyMachineYear, dailyMachineMonth);
+  const namaBulan = `${NAMA_BULAN_PANJANG[month-1].toUpperCase()} ${year}`;
+  const dayLabels = Array.from({ length: daysInMonth }, (_, i) => String(i+1));
+  // Data BULAN SEBELUMNYA (urus juga pergantian tahun, mis. Januari -> Desember tahun lalu),
+  // cuma buat pembanding tren naik/turun di kartu.
+  const prevMonth = month === 1 ? 12 : month - 1;
+  const prevYear = month === 1 ? year - 1 : year;
+  const prevMetrics = computeRataRataAllMetrics_(machineIds, buildDailyMachineData(prevYear, prevMonth).data);
+
+  document.getElementById('gsphHariMesinTitle').textContent = `GSPH/HARI/MESIN - ${namaBulan}`;
+  document.getElementById('strokeHariMesinTitle').textContent = `STROKE/HARI/MESIN - ${namaBulan}`;
+  document.getElementById('lineStopHariMesinTitle').textContent = `LINE STOP/HARI/MESIN - ${namaBulan}`;
+  document.getElementById('ngHariMesinTitle').textContent = `NG IN PROSES/HARI/MESIN - ${namaBulan}`;
+
+  const gsphHeadHtml = ['<th>Mesin</th>', '<th>Target</th>']
+    .concat(dayLabels.map(d => `<th>${d}</th>`))
+    .concat(['<th>Rata-rata</th>', '<th>Achievement GSPH %</th>'])
+    .join('');
+  const plainHeadHtml = ['<th>Mesin</th>']
+    .concat(dayLabels.map(d => `<th>${d}</th>`))
+    .concat(['<th>Rata-rata</th>'])
+    .join('');
+  document.getElementById('tblGsphHariMesinHead').innerHTML = gsphHeadHtml;
+  ['tblStrokeHariMesinHead','tblLineStopHariMesinHead','tblNgHariMesinHead'].forEach(id => {
+    document.getElementById(id).innerHTML = plainHeadHtml;
+  });
+
+  const gsphColCount = 2 + dayLabels.length + 2;
+  const plainColCount = 1 + dayLabels.length + 1;
+  const adaData = machineIds.some(mId => data[mId].some(b => b.totalJamSum > 0 || b.strokeSum > 0 || b.ngSum > 0 || b.lineStopMenitSum > 0));
+
+  const gsphBody = document.getElementById('tblGsphHariMesin');
+  const strokeBody = document.getElementById('tblStrokeHariMesin');
+  const lineStopBody = document.getElementById('tblLineStopHariMesin');
+  const ngBody = document.getElementById('tblNgHariMesin');
+
+  if(!adaData){
+    gsphBody.innerHTML = `<tr><td colspan="${gsphColCount}" style="text-align:center; color:var(--text-faint);">Belum ada data di bulan ${namaBulan}</td></tr>`;
+    const plainEmpty = `<tr><td colspan="${plainColCount}" style="text-align:center; color:var(--text-faint);">Belum ada data di bulan ${namaBulan}</td></tr>`;
+    strokeBody.innerHTML = plainEmpty;
+    lineStopBody.innerHTML = plainEmpty;
+    ngBody.innerHTML = plainEmpty;
+    ['gsphHariMesinCards','strokeHariMesinCards','lineStopHariMesinCards','ngHariMesinCards'].forEach(id => {
+      const el = document.getElementById(id); if(el) el.innerHTML = '';
+    });
+    return;
+  }
+
+  const machineNameCell = mId => {
+    const m = MACHINES.find(x => x.id === mId);
+    const color = m ? m.color : 'inherit';
+    return `<td style="color:${color}; font-weight:600;">${mId}</td>`;
+  };
+
+  const gsphRataRataByMachine = {};
+  gsphBody.innerHTML = machineIds.map(mId => {
+    const target = (MACHINES.find(m => m.id === mId) || {}).target || 0;
+    const dailyGsph = data[mId].map(b => b.totalJamSumWeekday > 0 ? Math.round(b.strokeSumWeekday / b.totalJamSumWeekday) : null);
+    const cells = dailyGsph.map(v => `<td>${v === null ? '-' : v}</td>`).join('');
+    const validVals = dailyGsph.filter(v => v !== null);
+    const rataRata = validVals.length ? Math.round(validVals.reduce((a,b) => a+b, 0) / validVals.length) : null;
+    gsphRataRataByMachine[mId] = rataRata;
+    const achievement = (rataRata !== null && target > 0) ? Math.round((rataRata / target) * 1000) / 10 : null;
+    const achievementCell = achievement === null
+      ? '<td>-</td>'
+      : `<td style="color:${achievement >= 100 ? 'var(--good)' : 'var(--danger)'}; font-weight:700;">${achievement}%</td>`;
+    return `<tr>${machineNameCell(mId)}<td>${target}</td>${cells}<td>${rataRata === null ? '-' : rataRata}</td>${achievementCell}</tr>`;
+  }).join('');
+  renderMachineCardsRow('gsphHariMesinCards', '&#128202;', gsphRataRataByMachine, prevMetrics.gsph, false);
+
+  const buildPlainRow = (mId, getVal, rataRataStore) => {
+    const buckets = data[mId];
+    const cells = buckets.map(b => `<td>${getVal(b)}</td>`).join('');
+    const activeBuckets = buckets.filter(b => b.totalJamSum > 0);
+    const sum = activeBuckets.reduce((a,b) => a + getVal(b), 0);
+    const rataRata = activeBuckets.length ? Math.round(sum / activeBuckets.length) : 0;
+    if(rataRataStore) rataRataStore[mId] = rataRata;
+    return `<tr>${machineNameCell(mId)}${cells}<td>${rataRata}</td></tr>`;
+  };
+
+  const strokeRataRataByMachine = {};
+  strokeBody.innerHTML = machineIds.map(mId => buildPlainRow(mId, b => b.strokeSum || 0, strokeRataRataByMachine)).join('');
+  renderMachineCardsRow('strokeHariMesinCards', '&#9881;', strokeRataRataByMachine, prevMetrics.stroke, false);
+
+  const lineStopRataRataByMachine = {};
+  lineStopBody.innerHTML = machineIds.map(mId => buildPlainRow(mId, b => b.lineStopMenitSum || 0, lineStopRataRataByMachine)).join('');
+  renderMachineCardsRow('lineStopHariMesinCards', '&#9203;', lineStopRataRataByMachine, prevMetrics.lineStop, true);
+
+  const ngRataRataByMachine = {};
+  ngBody.innerHTML = machineIds.map(mId => buildPlainRow(mId, b => b.ngSum || 0, ngRataRataByMachine)).join('');
+  renderMachineCardsRow('ngHariMesinCards', '&#9888;', ngRataRataByMachine, prevMetrics.ng, true);
+}
+
+/** Export salah satu dari ke-4 tabel harian ke CSV, sama polanya dengan exportMonthlyMachineCsv(). */
+function exportDailyMachineCsv(metric, filenamePrefix){
+  const { year, month, daysInMonth, machineIds, data } = buildDailyMachineData(dailyMachineYear, dailyMachineMonth);
+  const dayLabels = Array.from({ length: daysInMonth }, (_, i) => String(i+1));
+  const namaBulan = `${NAMA_BULAN_PANJANG[month-1]}-${year}`;
+
+  if(metric === 'gsph'){
+    const cols = ['Mesin', 'Target', ...dayLabels, 'Rata-rata', 'Achievement GSPH %'];
+    const rows = machineIds.map(mId => {
+      const target = (MACHINES.find(m => m.id === mId) || {}).target || 0;
+      const dailyGsph = data[mId].map(b => b.totalJamSumWeekday > 0 ? Math.round(b.strokeSumWeekday / b.totalJamSumWeekday) : 0);
+      const validVals = data[mId].filter(b => b.totalJamSumWeekday > 0).map(b => Math.round(b.strokeSumWeekday / b.totalJamSumWeekday));
+      const rataRata = validVals.length ? Math.round(validVals.reduce((a,b) => a+b, 0) / validVals.length) : 0;
+      const achievement = (validVals.length && target > 0) ? Math.round((rataRata / target) * 1000) / 10 : 0;
+      return [mId, target, ...dailyGsph, rataRata, achievement];
+    });
+    exportTableToCsv(cols, rows, `${filenamePrefix}-${namaBulan}`, 'SemuaMesin');
+    return;
+  }
+
+  const getVal = b => {
+    if(metric === 'stroke') return b.strokeSum || 0;
+    if(metric === 'lineStop') return b.lineStopMenitSum || 0;
+    if(metric === 'ng') return b.ngSum || 0;
+    return 0;
+  };
+  const cols = ['Mesin', ...dayLabels, 'Rata-rata'];
+  const rows = machineIds.map(mId => {
+    const buckets = data[mId];
+    const vals = buckets.map(getVal);
+    const activeBuckets = buckets.filter(b => b.totalJamSum > 0);
+    const sum = activeBuckets.reduce((a,b) => a + getVal(b), 0);
+    const rataRata = activeBuckets.length ? Math.round(sum / activeBuckets.length) : 0;
+    return [mId, ...vals, rataRata];
+  });
+  exportTableToCsv(cols, rows, `${filenamePrefix}-${namaBulan}`, 'SemuaMesin');
+}
+
+document.getElementById('exportGsphHariMesinCsvBtn').addEventListener('click', () => exportDailyMachineCsv('gsph', 'GSPH-per-Hari-Mesin'));
+document.getElementById('exportStrokeHariMesinCsvBtn').addEventListener('click', () => exportDailyMachineCsv('stroke', 'Stroke-per-Hari-Mesin'));
+document.getElementById('exportLineStopHariMesinCsvBtn').addEventListener('click', () => exportDailyMachineCsv('lineStop', 'LineStop-per-Hari-Mesin'));
+document.getElementById('exportNgHariMesinCsvBtn').addEventListener('click', () => exportDailyMachineCsv('ng', 'NG-per-Hari-Mesin'));
+document.getElementById('dailyMachineMonthSelect').addEventListener('change', (e) => {
+  if(!e.target.value) return;
+  const [y, m] = e.target.value.split('-').map(Number);
+  dailyMachineYear = y; dailyMachineMonth = m;
+  renderDailyMachineTables();
+});
+
+/** Toggle sub-tab Harian/Bulanan di General Summary — cuma soal tampil/sembunyi container,
+ *  datanya sudah selalu di-render dua-duanya lewat renderGeneralSummary() supaya tidak ada
+ *  jeda render kosong pas baru pindah sub-tab. */
+document.querySelectorAll('#generalSummarySubTabPills input[name="generalSummarySubTab"]').forEach(radio => {
+  radio.addEventListener('change', (e) => {
+    const isHarian = e.target.value === 'harian';
+    document.getElementById('generalSummaryHarian').style.display = isHarian ? '' : 'none';
+    document.getElementById('generalSummaryBulanan').style.display = isHarian ? 'none' : '';
+  });
+});
+
+/* ============================================================
    MASTER RENDER
 ============================================================ */
+function renderGeneralSummary(){
+  renderMonthlyMachineTables();
+  renderDailyMachineTables();
+}
 function renderAll(){
   if(state.view === 'riwayat'){ renderRiwayatHeader(); renderRiwayat(); }
   if(state.view === 'dashboard') renderDashboard();
   if(state.view === 'summary') renderSummary();
+  if(state.view === 'generalsummary') renderGeneralSummary();
 }
 
 /* ============================================================
