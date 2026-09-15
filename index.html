@@ -3024,7 +3024,7 @@ function renderRiwayat(){
       <td>${entry.spm}</td>
       <td>${entry.spmKajuhekin}</td>
       <td>${entry.gsph ?? 0}</td>
-      <td>${badgeForStatus(entry.statusLabel)}</td>
+      <td>${badgeForStatus(statusFor(entry))}</td>
       <td>${entry.jamMulai || '-'}</td>
       <td>${entry.jamSelesai || '-'}</td>
       <td>${entry.computed.totalJam}</td>
@@ -3130,7 +3130,7 @@ function exportEntriesToCsv(entries, filenamePrefix){
 
   const rows = entries.map(e => [
   e.tanggal, e.shift, e.pic, e.part, e.planning, e.material, e.stroke, e.pcsok,
-  e.jenisScrap, e.qtyNg, e.spm, e.spmKajuhekin ?? '', e.gsph ?? '', e.statusLabel, e.jamMulai, e.jamSelesai,
+  e.jenisScrap, e.qtyNg, e.spm, e.spmKajuhekin ?? '', e.gsph ?? '', statusFor(e), e.jamMulai, e.jamSelesai,
   e.dandori, e.computed.totalMenit, e.computed.totalJam ?? '',
   e.stopTerplanJenis || '', e.stopTerplanMenit || 0, e.computed.lineStop, e.computed.efektif,
   e.computed.pctLineStop+'%', e.computed.pctDandori+'%', e.computed.pctEfisiensi+'%',
@@ -3208,7 +3208,7 @@ function printDailyReport(){
       <td>${e.pcsok}</td>
       <td>${e.qtyNg}</td>
       <td>${e.gsph ?? 0}</td>
-      <td>${escapeHtml(e.statusLabel || '-')}</td>
+      <td>${escapeHtml(statusFor(e) || '-')}</td>
       <td>${e.jamMulai || '-'} - ${e.jamSelesai || '-'}</td>
     </tr>`;
   });
