@@ -1187,6 +1187,7 @@ input[type="time"]::-webkit-calendar-picker-indicator{
   <section class="view" id="view-dashboard">
     <div id="earlyWarningBanner" style="display:none; background:color-mix(in srgb, var(--danger) 14%, transparent); border:1px solid color-mix(in srgb, var(--danger) 40%, transparent); color:var(--danger); border-radius:10px; padding:12px 16px; margin-bottom:14px; font-size:13px; font-weight:600;"></div>
     <div id="unreviewedWarningBanner" style="display:none; background:color-mix(in srgb, #f4b740 16%, transparent); border:1px solid color-mix(in srgb, #f4b740 45%, transparent); color:#f4b740; border-radius:10px; padding:12px 16px; margin-bottom:14px; font-size:13px; font-weight:600;"></div>
+    <div id="spvCheckSection" style="margin-bottom:14px;"></div>
 
     <div class="summary-filter-card" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px; padding:12px 16px;">
       <div class="summary-filter-pills" id="dashboardRangePills">
@@ -3323,6 +3324,121 @@ async function deleteEntry(id){
   }
 }
 
+/** Cek Berkala SPV: checkpoint jam 11:40/16:30 (Siang, tanggal hari ini) dan 00:25/05:05
+ *  (Malam, tanggal KEMARIN karena shift malam mulai malam sebelumnya). General untuk semua
+ *  mesin sekaligus (bukan per mesin). Cuma pengingat & histori -- TIDAK nge-block siapa pun,
+ *  cuma makin "merah" makin lama telat belum dikonfirmasi. */
+const SPV_NAME_BY_SHIFT = { RED: 'Mr. Arie Ardian', BLUE: 'Mr. Sugana' };
+
+async function apiGetSpvChecks(){
+  const cfg = getConfig();
+  if(!cfg.scriptUrl) return [];
+  try{
+    const res = await fetch(`${cfg.scriptUrl}?action=spvchecks`);
+    const data = await res.json();
+    return (data.ok && Array.isArray(data.checks)) ? data.checks : [];
+  }catch(e){
+    return [];
+  }
+}
+async function apiSaveSpvCheck(tanggal, checkpoint){
+  const cfg = getConfig();
+  if(!cfg.scriptUrl) throw new Error('Aplikasi belum terhubung ke Google Sheets.');
+  const res = await fetch(cfg.scriptUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'saveSpvCheck', tanggal, checkpoint, token: getAuthToken() })
+  });
+  const data = await res.json();
+  if(!data.ok){ handleAuthFailureIfNeeded(data.error); throw new Error(data.error || 'Gagal menyimpan konfirmasi'); }
+  return data;
+}
+
+let spvCheckCache_ = [];
+async function refreshSpvCheckSection(){
+  spvCheckCache_ = await apiGetSpvChecks();
+  if(state.view === 'dashboard') renderSpvCheckSection();
+}
+
+/** Cari shift (RED/BLUE) yang kerja di window (siang/malam) tanggal tertentu, dari laporan
+ *  yang sudah masuk -- dipakai buat nentuin nama SPV mana yang ditag di checkpoint itu. */
+function findActiveShiftForWindow_(tanggal, windowName){
+  for(const m of MACHINES){
+    const entries = getEntries(m.id).filter(e => e.tanggal === tanggal && classifyShiftWindow_(e.jamMulai) === windowName);
+    if(entries.length) return entries[0].shift === 'BLUE' ? 'BLUE' : 'RED';
+  }
+  return null;
+}
+
+function buildSpvCheckpoints_(){
+  const now = new Date();
+  const nowMinutes = now.getHours()*60 + now.getMinutes();
+  const todayStr = localDateStr(now);
+  const yesterdayStr = localDateStr(new Date(now.getTime() - 86400000));
+
+  const defs = [
+    { time: '11:40', minutes: 11*60+40, tanggal: todayStr, windowName: 'siang' },
+    { time: '16:30', minutes: 16*60+30, tanggal: todayStr, windowName: 'siang' },
+    { time: '00:25', minutes: 0*60+25,  tanggal: yesterdayStr, windowName: 'malam' },
+    { time: '05:05', minutes: 5*60+5,   tanggal: yesterdayStr, windowName: 'malam' },
+  ];
+  return defs.filter(d => nowMinutes >= d.minutes).map(d => {
+    const shift = findActiveShiftForWindow_(d.tanggal, d.windowName);
+    return { ...d, shift, spvName: shift ? SPV_NAME_BY_SHIFT[shift] : null };
+  });
+}
+
+function renderSpvCheckSection(){
+  const container = document.getElementById('spvCheckSection');
+  if(!container) return;
+  const checkpoints = buildSpvCheckpoints_();
+  if(!checkpoints.length){ container.innerHTML = ''; return; }
+
+  const now = new Date();
+  const isSpv = isSpvUpUser() || isAdminUser();
+
+  container.innerHTML = checkpoints.map(cp => {
+    const rec = spvCheckCache_.find(c => c.tanggal === cp.tanggal && c.checkpoint === cp.time);
+    if(rec){
+      return `<div style="background:color-mix(in srgb, var(--good) 14%, transparent); border:1px solid color-mix(in srgb, var(--good) 40%, transparent); border-radius:10px; padding:10px 16px; margin-bottom:8px; font-size:12.5px;">
+        &#9989; Cek Berkala ${cp.time} &mdash; dikonfirmasi <b>${escapeHtml(rec.nama)}</b> (${rec.waktu})
+      </div>`;
+    }
+    const cpDate = new Date(cp.tanggal + 'T00:00:00');
+    cpDate.setHours(Math.floor(cp.minutes/60), cp.minutes%60, 0, 0);
+    const lateMinutes = Math.max(0, Math.round((now - cpDate) / 60000));
+    let bg, border, color;
+    if(lateMinutes < 30){ bg='color-mix(in srgb, #f4b740 14%, transparent)'; border='color-mix(in srgb, #f4b740 40%, transparent)'; color='#f4b740'; }
+    else if(lateMinutes < 60){ bg='color-mix(in srgb, #fb923c 16%, transparent)'; border='color-mix(in srgb, #fb923c 45%, transparent)'; color='#fb923c'; }
+    else { bg='color-mix(in srgb, var(--danger) 16%, transparent)'; border='color-mix(in srgb, var(--danger) 45%, transparent)'; color='var(--danger)'; }
+
+    const tagName = cp.spvName ? `Yth. ${cp.spvName}` : 'SPV UP';
+    const btnHtml = isSpv ? `<button class="btn btn-primary btn-sm spv-check-btn" data-tanggal="${cp.tanggal}" data-checkpoint="${cp.time}">Konfirmasi Cek</button>` : '';
+
+    return `<div style="background:${bg}; border:1px solid ${border}; color:${color}; border-radius:10px; padding:10px 16px; margin-bottom:8px; font-size:12.5px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+      <span><b>${escapeHtml(tagName)}</b> &mdash; waktunya cek hasil kerja (checkpoint ${cp.time})${lateMinutes > 0 ? ` <span style="opacity:.85;">(telat ${lateMinutes} menit)</span>` : ''}</span>
+      ${btnHtml}
+    </div>`;
+  }).join('');
+
+  container.querySelectorAll('.spv-check-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      const original = btn.textContent;
+      btn.textContent = 'Menyimpan...';
+      try{
+        await apiSaveSpvCheck(btn.dataset.tanggal, btn.dataset.checkpoint);
+        toast('Cek berkala berhasil dikonfirmasi.');
+        await refreshSpvCheckSection();
+      }catch(err){
+        toast('Gagal: ' + err.message);
+        btn.disabled = false;
+        btn.textContent = original;
+      }
+    });
+  });
+}
+
 /** Review GL/FM: menandai 1 laporan sudah diperiksa GL/FM. Nama & waktu diambil dari sesi
  *  login (server yang catat, bukan input manual), sama polanya dengan Approval Shift. */
 async function apiSetReview(machineId, id, field){
@@ -3769,6 +3885,8 @@ function renderUnreviewedWarningBanner(){
 function renderDashboard(){
   renderEarlyWarningBanner();
   renderUnreviewedWarningBanner();
+  renderSpvCheckSection(); // render dulu pakai cache lama biar tidak kedip kosong
+  refreshSpvCheckSection(); // lalu ambil data terbaru dari server (async)
   const entries = getEntries(state.machine).slice().sort((a,b)=> a.tanggal.localeCompare(b.tanggal));
   const accent = currentMachine().color;
   const COLOR_RED = '#ef4444', COLOR_BLUE = '#60a5fa';
@@ -5493,6 +5611,7 @@ checkLoginGate();
 })();
 
 setInterval(renderEarlyWarningBanner, 5 * 60 * 1000);
+setInterval(renderSpvCheckSection, 60 * 1000); // update tampilan "telat X menit" tiap 1 menit
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js');
 }
