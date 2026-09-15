@@ -2940,7 +2940,7 @@ function renderRiwayatHeader(){
     <th>Tanggal</th><th>Waktu Input</th><th>Shift</th><th>PIC</th><th>Part Nomor</th>
     <th>Planning</th><th>Material</th><th>Stroke</th><th>Pcs OK</th>
     <th>Jenis Scrap</th><th>Qty NG</th><th>SPM</th><th>SPM Kajuhekin</th><th>GSPH</th>
-    <th>Status</th><th>Jam Mulai</th><th>Jam Selesai</th>
+    <th>Status</th><th>Alasan</th><th>Jam Mulai</th><th>Jam Selesai</th>
     <th>Total Jam</th><th>Total Menit</th><th>Dandori</th><th>% Dandori</th>
     <th>Stop Terplan Jenis</th><th>Stop Terplan Menit</th><th>% Stop Terplan</th>
     <th>Total Line Stop</th><th>% Line Stop</th><th>Waktu Efektif</th><th>% Efisiensi</th>
@@ -3025,6 +3025,7 @@ function renderRiwayat(){
       <td>${entry.spmKajuhekin}</td>
       <td>${entry.gsph ?? 0}</td>
       <td>${badgeForStatus(statusFor(entry))}</td>
+      <td>${escapeHtml(entry.alasanTidakSesuai || '-')}</td>
       <td>${entry.jamMulai || '-'}</td>
       <td>${entry.jamSelesai || '-'}</td>
       <td>${entry.computed.totalJam}</td>
