@@ -996,8 +996,8 @@ input[type="time"]::-webkit-calendar-picker-indicator{
       <div style="font-size:48px; margin-bottom:16px;">&#9203;</div>
       <h2 style="margin-bottom:10px;">Menunggu Review Laporan Sebelumnya</h2>
       <p style="color:var(--text-faint); max-width:480px; margin:0 auto 20px;">
-        Laporan terakhir yang kamu simpan harus di-review dulu oleh <b>GL/FM</b> atau <b>SPV UP</b>
-        (salah satu saja) sebelum kamu bisa lanjut input laporan berikutnya.
+        Laporan terakhir yang kamu simpan harus di-review dulu oleh <b>GL/FM</b>
+        sebelum kamu bisa lanjut input laporan berikutnya.
       </p>
       <div id="pendingReviewStatus" style="display:inline-flex; flex-direction:column; gap:10px; text-align:left; background:var(--panel-2); border:1px solid var(--border); border-radius:10px; padding:16px 24px; margin-bottom:20px;"></div>
       <div>
@@ -1166,7 +1166,7 @@ input[type="time"]::-webkit-calendar-picker-indicator{
             <th>GSPH</th><th>Status</th><th>Jam Mulai</th><th>Jam Selesai</th>
             <th>Total (Jam)</th><th>Total (Menit)</th><th>Dandori</th><th>%Dandori</th>
             <th>Stop Terplan</th><th>Menit Terplan</th><th>Total Line Stop</th><th>%Line Stop</th>
-            <th>Waktu Efektif</th><th>%Efisiensi</th><th>Konfirmasi</th><th>Aksi</th><th>Review GL/FM</th><th>Review SPV UP</th>
+            <th>Waktu Efektif</th><th>%Efisiensi</th><th>Konfirmasi</th><th>Aksi</th><th>Review GL/FM</th>
           </tr>
         </thead>
         <tbody id="riwayatBody"></tbody>
@@ -1600,9 +1600,6 @@ jenisScrap: e.jenisScrap || '',
     reviewedByGLFM: !!e.reviewedByGLFM,
     reviewedByName: e.reviewedByName || '',
     reviewedByTime: e.reviewedByTime || '',
-    reviewedBySPV: !!e.reviewedBySPV,
-    reviewedBySPVName: e.reviewedBySPVName || '',
-    reviewedBySPVTime: e.reviewedBySPVTime || '',
     spm: Number(e.spm) || 0,
     spmKajuhekin: Number(e.spmKajuhekin) || 0,
     gsph: (e.gsph === undefined || e.gsph === null || e.gsph === '') ? null : Number(e.gsph),
@@ -2906,24 +2903,20 @@ function renderPendingReviewStatus(){
   const glfmHtml = entry.reviewedByGLFM
     ? `&#9989; GL/FM: <b>${escapeHtml(entry.reviewedByName)}</b> <span style="color:var(--text-faint); font-size:11px;">(${entry.reviewedByTime})</span>`
     : `&#8987; GL/FM: <span style="color:var(--danger); font-weight:600;">Belum direview</span>`;
-  const spvHtml = entry.reviewedBySPV
-    ? `&#9989; SPV UP: <b>${escapeHtml(entry.reviewedBySPVName)}</b> <span style="color:var(--text-faint); font-size:11px;">(${entry.reviewedBySPVTime})</span>`
-    : `&#8987; SPV UP: <span style="color:var(--danger); font-weight:600;">Belum direview</span>`;
-  statusEl.innerHTML = `<div>${glfmHtml}</div><div>${spvHtml}</div>`;
+  statusEl.innerHTML = `<div>${glfmHtml}</div>`;
 }
-/** Cek apakah laporan yang lagi ditunggu sudah direview LENGKAP (GL/FM & SPV UP dua-duanya).
- *  Kalau sudah, otomatis buka kunci form & reset ke laporan baru. */
+/** Cek apakah laporan yang lagi ditunggu sudah direview GL/FM. Kalau sudah, otomatis buka
+ *  kunci form & reset ke laporan baru. */
 function checkPendingReviewStatus(){
   const pending = getPendingReview();
   if(!pending) return;
   const entries = getEntries(pending.machine);
   const entry = entries.find(x => x.id === pending.id);
-  if(entry && (entry.reviewedByGLFM || entry.reviewedBySPV)){
+  if(entry && entry.reviewedByGLFM){
     setPendingReview(null);
     hidePendingReviewOverlay();
     resetForm();
-    const reviewer = entry.reviewedByGLFM ? 'GL/FM' : 'SPV UP';
-    toast(`Laporan sudah direview (${reviewer}) -- silakan lanjut input laporan berikutnya.`);
+    toast('Laporan sudah direview GL/FM -- silakan lanjut input laporan berikutnya.');
     return;
   }
   renderPendingReviewStatus();
@@ -3210,12 +3203,6 @@ function renderRiwayat(){
         ${entry.reviewedByGLFM
           ? `<span style="color:var(--good); font-weight:700; font-size:11.5px;">&#9989; ${escapeHtml(entry.reviewedByName || '')}<br><span style="font-weight:400; color:var(--text-faint);">${entry.reviewedByTime || ''}</span></span>`
           : ((isOperatorUser() || isAdminUser()) ? `<button class="btn btn-ghost btn-sm" data-review="${entry.id}" data-field="glfm">Review (GL/FM)</button>` : `<span style="color:var(--danger); font-size:11.5px;">Belum direview</span>`)
-        }
-      </td>
-      <td>
-        ${entry.reviewedBySPV
-          ? `<span style="color:var(--good); font-weight:700; font-size:11.5px;">&#9989; ${escapeHtml(entry.reviewedBySPVName || '')}<br><span style="font-weight:400; color:var(--text-faint);">${entry.reviewedBySPVTime || ''}</span></span>`
-          : ((isSpvUpUser() || isAdminUser()) ? `<button class="btn btn-ghost btn-sm" data-review="${entry.id}" data-field="spv">Review (SPV UP)</button>` : `<span style="color:var(--danger); font-size:11.5px;">Belum direview</span>`)
         }
       </td>
     `;
