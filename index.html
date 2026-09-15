@@ -359,6 +359,21 @@ input[type="time"]::-webkit-calendar-picker-indicator{
   .badge-bad{ background: color-mix(in srgb, var(--danger) 18%, transparent); color: var(--danger); }
   .empty-state{ text-align:center; padding: 50px 20px; color: var(--text-faint); }
 
+  /* ---------- Baris pemisah tanggal di tabel Record Data ---------- */
+  .riwayat-date-separator td{
+    height:30px; padding:0; border:none; background:transparent; position:relative;
+  }
+  .riwayat-date-separator td::before{
+    content:''; position:absolute; left:0; right:0; top:20px; height:1px;
+    background: var(--border);
+  }
+  .riwayat-date-label{
+    position:absolute; left:4px; top:2px; z-index:1;
+    display:inline-block; background: var(--accent); color: var(--accent-ink);
+    font-weight:800; font-size:11.5px; letter-spacing:.3px;
+    padding:3px 10px; border-radius:5px;
+  }
+
   /* ---------- Tabel Bulanan per Mesin (GSPH/Stroke/LineStop/NG) ---------- */
   .monthly-machine-table table{ min-width:0; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
   .monthly-machine-table thead th{
@@ -2683,10 +2698,12 @@ function escapeHtml(str){
 }
 
 /** Pencapaian (%) = Actual Produksi (Pcs OK) / Planning x 100%. Toleransi +-10%:
- *  90% - 110% (termasuk lebih dari 110%) = Sesuai. Di bawah 90% = Tidak Sesuai. */
+ *  90% - 110% = Sesuai (dalam toleransi). Di atas 110% = Over Produksi. Di bawah 90% = Kurang. */
 function computeAutoStatus(pcsok, planning){
   const pencapaian = planning > 0 ? (pcsok/planning)*100 : 100;
-  return pencapaian >= 90 ? 'Produksi Sesuai' : 'Produksi kurang!';
+  if(pencapaian > 110) return 'Over Produksi';
+  if(pencapaian < 90) return 'Produksi kurang!';
+  return 'Produksi Sesuai';
 }
 function statusFor(entry){
   if(entry.status && entry.status !== 'auto') return entry.status;
@@ -2970,8 +2987,23 @@ function renderRiwayat(){
     document.getElementById('riwayatNextBtn').disabled = riwayatCurrentPage >= totalPages;
   }
 
+  // Jumlah kolom tabel (dinamis, ikut jumlah kategori problem) -> dipakai buat colspan baris pemisah tanggal.
+  const theadRowForColspan = document.querySelector('#view-riwayat table thead tr');
+  const colCount = theadRowForColspan ? theadRowForColspan.children.length : 1;
+  let lastTanggalSeparator = null;
+
   const cats = getProblemCategories();
   pageEntries.forEach(entry => {
+    // Setiap kali tanggalnya beda dari baris sebelumnya, sisipkan baris pemisah kosong
+    // dengan label tanggal di pojok kiri atas -- biar gampang lihat batas antar tanggal.
+    if(entry.tanggal !== lastTanggalSeparator){
+      lastTanggalSeparator = entry.tanggal;
+      const sep = document.createElement('tr');
+      sep.className = 'riwayat-date-separator';
+      sep.innerHTML = `<td colspan="${colCount}"><span class="riwayat-date-label">${entry.tanggal}</span></td>`;
+      body.appendChild(sep);
+    }
+
     const tr = document.createElement('tr');
     const catData = aggregateProblemsForDisplay(entry.problems, cats);
     const catTds = catData.map(d => `<td>${escapeHtml(d.ket)}</td><td>${d.menit}</td>`).join('');
@@ -3511,19 +3543,19 @@ function renderDashboard(){
       a + ((e.computed && e.computed.totalJam) || 0) - ((e.stopTerplanMenit || 0) / 60), 0);
     return totalJamEfektif > 0 ? Math.round(totalStroke / totalJamEfektif) : 0;
   };
-  const strokeAvgOf = (list) => list.length ? Math.round(list.reduce((s,e)=> s+e.stroke,0)/list.length) : 0;
+  const strokeSumOf = (list) => list.reduce((s,e)=> s+e.stroke, 0);
   const pctAvgOf = (list, field) => list.length ? Math.round(list.reduce((s,e)=> s+e.computed[field],0)/list.length) : 0;
 
   const gsphAvgRed = gsphOf(todayRed);
   const gsphAvgBlue = gsphOf(todayBlue);
   const gsphAvgGab = gsphOf(todayEntries);
-  const strokeAvgRed = strokeAvgOf(todayRed);
-  const strokeAvgBlue = strokeAvgOf(todayBlue);
+  const strokeSumRed = strokeSumOf(todayRed);
+  const strokeSumBlue = strokeSumOf(todayBlue);
   const prevGsphAvgRed = gsphOf(prevRed);
   const prevGsphAvgBlue = gsphOf(prevBlue);
   const prevGsphAvgGab = gsphOf(prevRangeEntries);
-  const prevStrokeAvgRed = strokeAvgOf(prevRed);
-  const prevStrokeAvgBlue = strokeAvgOf(prevBlue);
+  const prevStrokeSumRed = strokeSumOf(prevRed);
+  const prevStrokeSumBlue = strokeSumOf(prevBlue);
 
   const effAvg = pctAvgOf(todayEntries, 'pctEfisiensi');
   const dandoriAvg = pctAvgOf(todayEntries, 'pctDandori');
@@ -3540,8 +3572,8 @@ function renderDashboard(){
   document.getElementById('d_gsphavg_gab').textContent = gsphAvgGab.toLocaleString('id-ID');
   document.getElementById('d_gsphavg_red').textContent = gsphAvgRed.toLocaleString('id-ID');
   document.getElementById('d_gsphavg_blue').textContent = gsphAvgBlue.toLocaleString('id-ID');
-  document.getElementById('d_strokeavg_red').textContent = strokeAvgRed.toLocaleString('id-ID');
-  document.getElementById('d_strokeavg_blue').textContent = strokeAvgBlue.toLocaleString('id-ID');
+  document.getElementById('d_strokeavg_red').textContent = strokeSumRed.toLocaleString('id-ID');
+  document.getElementById('d_strokeavg_blue').textContent = strokeSumBlue.toLocaleString('id-ID');
   document.getElementById('d_effavg').textContent = effAvg + '%';
   document.getElementById('d_dandoriavg').textContent = dandoriAvg + '%';
   document.getElementById('d_linestoppctavg').textContent = lineStopPctAvg + '%';
@@ -3560,8 +3592,8 @@ function renderDashboard(){
   setTrend('d_gsphavg_red_trend', gsphAvgRed, prevGsphAvgRed, false);
   setTrend('d_gsphavg_blue_trend', gsphAvgBlue, prevGsphAvgBlue, false);
   setTrend('d_totalstroke_trend', totalStroke, prevTotalStroke, false);
-  setTrend('d_strokeavg_red_trend', strokeAvgRed, prevStrokeAvgRed, false);
-  setTrend('d_strokeavg_blue_trend', strokeAvgBlue, prevStrokeAvgBlue, false);
+  setTrend('d_strokeavg_red_trend', strokeSumRed, prevStrokeSumRed, false);
+  setTrend('d_strokeavg_blue_trend', strokeSumBlue, prevStrokeSumBlue, false);
   setTrend('d_totalng_trend', totalNg, prevTotalNg, true);
   setTrend('d_totallinestop_trend', Number(totalLineStopJam), prevTotalLineStopJam, true);
   setTrend('d_effavg_trend', effAvg, prevEffAvg, false);
@@ -4556,6 +4588,17 @@ function renderMachineCardsRow(containerId, icon, valueByMachine, prevValueByMac
   }).join('');
 }
 
+/** Data GSPH bulanan HISTORIS (referensi manual, sebelum aplikasi ini dipakai) — HANYA numpang
+ *  tampil di tabel GSPH/BULAN/MESIN kalau bulan itu belum ada laporan asli sama sekali di Record
+ *  Data. Begitu ada laporan asli untuk bulan itu, nilai asli otomatis dipakai & yang ini diabaikan.
+ *  TIDAK mempengaruhi Record Data, Dashboard, atau tabel Stroke/Line Stop/NG sama sekali. */
+const GSPH_HISTORICAL_OVERRIDE = {
+  '300BP':  { 2026: { 1:1644, 2:1645, 3:1623, 4:1637, 5:1625, 6:1628, 7:1637, 8:1650 } },
+  '800BP':  { 2026: { 1:1439, 2:1445, 3:1461, 4:1423, 5:1415, 6:1403, 7:1376, 8:1362 } },
+  '1600TR': { 2026: { 1:921,  2:917,  3:953,  4:933,  5:921,  6:918,  7:927,  8:935  } },
+  '2500TR': { 2026: { 1:774,  2:786,  3:775,  4:762,  5:767,  6:757,  7:801,  8:815  } },
+};
+
 function renderMonthlyMachineTables(){
   ensureMonthlyMachineYearOptions();
   const { currentYear, machineIds, data } = buildMonthlyMachineData(monthlyMachineYear);
@@ -4610,9 +4653,14 @@ function renderMonthlyMachineTables(){
   const gsphRataRataByMachine = {};
   gsphBody.innerHTML = machineIds.map(mId => {
     const target = (MACHINES.find(m => m.id === mId) || {}).target || 0;
-    const monthlyGsph = data[mId].map(b => b.totalJamSumWeekday > 0 ? Math.round(b.strokeSumWeekday / b.totalJamSumWeekday) : null);
-    const cells = monthlyGsph.map(v => `<td>${v === null ? '-' : v}</td>`).join('');
-    const validVals = monthlyGsph.filter(v => v !== null);
+    const overrideForMachine = (GSPH_HISTORICAL_OVERRIDE[mId] && GSPH_HISTORICAL_OVERRIDE[mId][currentYear]) || {};
+    const monthlyGsph = data[mId].map((b, idx) => {
+      if(b.totalJamSumWeekday > 0) return { val: Math.round(b.strokeSumWeekday / b.totalJamSumWeekday), isRef: false };
+      const refVal = overrideForMachine[idx + 1];
+      return refVal !== undefined ? { val: refVal, isRef: true } : { val: null, isRef: false };
+    });
+    const cells = monthlyGsph.map(o => o.val === null ? '<td>-</td>' : `<td${o.isRef ? ' style="font-style:italic; color:var(--text-faint);" title="Data referensi historis, bukan dari laporan Record Data"' : ''}>${o.val}${o.isRef ? '*' : ''}</td>`).join('');
+    const validVals = monthlyGsph.filter(o => o.val !== null).map(o => o.val);
     const rataRata = validVals.length ? Math.round(validVals.reduce((a,b) => a+b, 0) / validVals.length) : null;
     gsphRataRataByMachine[mId] = rataRata;
     const achievement = (rataRata !== null && target > 0) ? Math.round((rataRata / target) * 1000) / 10 : null;
