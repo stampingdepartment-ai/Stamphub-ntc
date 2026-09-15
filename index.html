@@ -985,7 +985,7 @@ input[type="time"]::-webkit-calendar-picker-indicator{
   </div>
 </div>
 <main>
-<div id="activeMachineTitle" style="display:flex; align-items:center; gap:10px; margin-bottom:18px; padding:10px 16px; background:var(--panel-2); border:1px solid var(--border); border-radius:8px; position:sticky; top:var(--topbar-height, 65px); z-index:22;">
+<div id="activeMachineTitle" style="display:flex; align-items:center; gap:10px; margin-bottom:18px; padding:10px 16px; background:var(--panel-2); border:1px solid var(--border); border-radius:8px;">
   <span style="width:10px; height:10px; border-radius:50%; background:var(--accent); flex-shrink:0;"></span>
   <span style="font-size:13px; color:var(--text-dim); font-weight:600;">Mesin:</span>
   <span id="activeMachineName" style="font-size:15px; color:var(--text); font-weight:800; font-family:var(--mono); letter-spacing:.3px;"></span>
@@ -1279,7 +1279,7 @@ input[type="time"]::-webkit-calendar-picker-indicator{
 
   <!-- ============ SUMMARY VIEW ============ -->
   <section class="view" id="view-summary">
-    <div id="ringkasanFilterSticky" style="position:sticky; top:var(--machinebar-bottom, 130px); z-index:20; background:var(--bg); padding-top:4px; padding-bottom:4px; margin-bottom:0;">
+    <div id="ringkasanFilterSticky">
     <h2 class="section-title">Ringkasan (Tabel)</h2>
     <div class="summary-filter-card">
       <div class="summary-filter-daterow">
@@ -1528,6 +1528,54 @@ input[type="time"]::-webkit-calendar-picker-indicator{
           <table>
             <thead><tr id="tblNgHariMesinHead"></tr></thead>
             <tbody id="tblNgHariMesin"><tr></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="section-title" style="margin-top:20px;">Rincian Harian &mdash; Gabungan 4 Mesin</h2>
+    <div class="summary-filter-card">
+      <div class="summary-filter-daterow">
+        <div class="field-group">
+          <label>Dari</label>
+          <input type="date" id="gsRincianFrom">
+        </div>
+        <div class="field-group">
+          <label>Sampai</label>
+          <input type="date" id="gsRincianTo">
+        </div>
+        <div class="field-buttons">
+          <button class="btn btn-ghost btn-sm" id="gsRincianApplyBtn">Terapkan</button>
+          <button class="btn btn-ghost btn-sm" id="gsRincianResetBtn">Tampilkan Semua</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid cols-2" style="margin-top:14px;">
+      <div class="chart-card" style="grid-column:1 / -1;">
+        <h3 style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+          <span>Rincian NG &mdash; Semua Mesin <span id="gsRincianNgBadge" style="font-size:11px; font-weight:400; color:var(--text-faint);">(Semua Data)</span></span>
+          <button class="btn btn-ghost btn-sm" id="exportGsRincianNgCsvBtn">Export CSV</button>
+        </h3>
+        <div class="table-wrap summary-table" style="max-height:420px;">
+          <table>
+            <thead><tr><th>Tanggal</th><th>Part Nomor</th><th>Mesin</th><th>Shift</th><th>Qty NG</th><th>Jenis NG</th></tr></thead>
+            <tbody id="tblGsRincianNg"><tr></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid cols-2" style="margin-top:14px;">
+      <div class="chart-card" style="grid-column:1 / -1;">
+        <h3 style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+          <span>Rincian Line Stop &mdash; Semua Mesin <span id="gsRincianLineStopBadge" style="font-size:11px; font-weight:400; color:var(--text-faint);">(Semua Data)</span></span>
+          <button class="btn btn-ghost btn-sm" id="exportGsRincianLineStopCsvBtn">Export CSV</button>
+        </h3>
+        <div class="table-wrap summary-table" style="max-height:420px;">
+          <table>
+            <thead><tr><th>Tanggal</th><th>Part Nomor</th><th>Mesin</th><th>Shift</th><th>Jenis Problem</th><th>Total Waktu (menit)</th><th>Keterangan</th></tr></thead>
+            <tbody id="tblGsRincianLineStop"><tr></tr></tbody>
           </table>
         </div>
       </div>
@@ -4907,7 +4955,14 @@ function renderMonthlyMachineTables(){
   renderMachineCardsRow('lineStopBulanMesinCards', '&#9203;', lineStopRataRataByMachine, prevMetrics.lineStop, true);
 
   const ngRataRataByMachine = {};
-  ngBody.innerHTML = machineIds.map(mId => buildPlainRow(mId, b => b.ngSum || 0, ngRataRataByMachine)).join('');
+  // Urutkan baris mesin di tabel NG berdasarkan TOTAL NG (setahun) tertinggi -- beda dari
+  // 3 tabel lain yang tetap pakai urutan mesin baku (1600TR/2500TR/800BP/300BP).
+  const machineIdsByNgDesc = [...machineIds].sort((a,b) => {
+    const totalA = data[a].reduce((s,bkt) => s + (bkt.ngSum || 0), 0);
+    const totalB = data[b].reduce((s,bkt) => s + (bkt.ngSum || 0), 0);
+    return totalB - totalA;
+  });
+  ngBody.innerHTML = machineIdsByNgDesc.map(mId => buildPlainRow(mId, b => b.ngSum || 0, ngRataRataByMachine)).join('');
   renderMachineCardsRow('ngBulanMesinCards', '&#9888;', ngRataRataByMachine, prevMetrics.ng, true);
 }
 
@@ -5188,9 +5243,194 @@ document.querySelectorAll('#generalSummarySubTabPills input[name="generalSummary
 /* ============================================================
    MASTER RENDER
 ============================================================ */
+/** Rincian NG & Line Stop harian gabungan 4 mesin -- daftar mentah (bukan agregat), dipisah
+ *  per baris kejadian, mirip tabel Record Data tapi merge semua mesin jadi satu, diurutkan
+ *  dari tanggal terbaru dan dikasih jeda/label tiap ganti tanggal (sama polanya dengan
+ *  .riwayat-date-separator di Record Data). */
+let gsRincianFrom = null;
+let gsRincianTo = null;
+
+function buildGsRincianNgRows_(){
+  const rows = [];
+  MACHINES.forEach(m => {
+    getEntries(m.id).forEach(e => {
+      if(gsRincianFrom && e.tanggal < gsRincianFrom) return;
+      if(gsRincianTo && e.tanggal > gsRincianTo) return;
+      const ngList = (e.ngRows && e.ngRows.length) ? e.ngRows : (e.jenisScrap ? [{ jenis: e.jenisScrap, qty: e.qtyNg }] : []);
+      ngList.forEach(ng => {
+        if(!ng.qty && !ng.jenis) return;
+        rows.push({ tanggal: e.tanggal, part: e.part || '-', mesin: m.id, shift: e.shift, qty: ng.qty || 0, jenis: ng.jenis || '-' });
+      });
+    });
+  });
+  rows.sort((a,b) => b.tanggal.localeCompare(a.tanggal) || a.mesin.localeCompare(b.mesin));
+  return rows;
+}
+
+function buildGsRincianLineStopRows_(){
+  const rows = [];
+  MACHINES.forEach(m => {
+    getEntries(m.id).forEach(e => {
+      if(gsRincianFrom && e.tanggal < gsRincianFrom) return;
+      if(gsRincianTo && e.tanggal > gsRincianTo) return;
+      (e.problems || []).forEach(p => {
+        if(!p.menit) return;
+        rows.push({
+          tanggal: e.tanggal, part: e.part || '-', mesin: m.id, shift: e.shift,
+          kategoriKey: p.kategori || '', kategori: LINE_STOP_CATEGORY_LABEL[p.kategori] || p.kategori || '-',
+          menit: p.menit, keterangan: p.keterangan || '-',
+        });
+      });
+    });
+  });
+  // Urutan pengelompokan jenis problem per tanggal: Mesin, Dies, Finger, Misgrip, Material, Others
+  // -- biar semua kejadian "Mesin" ngumpul bareng, "Dies" ngumpul bareng, dst, per tanggalnya.
+  const kategoriUrutan = ['Machine','Dies','Finger','Misgrip','Material','Others'];
+  rows.sort((a,b) =>
+    b.tanggal.localeCompare(a.tanggal)
+    || (kategoriUrutan.indexOf(a.kategoriKey) - kategoriUrutan.indexOf(b.kategoriKey))
+    || a.mesin.localeCompare(b.mesin)
+  );
+  return rows;
+}
+
+function machineColor_(mId){
+  return (MACHINES.find(m => m.id === mId) || {}).color || 'inherit';
+}
+function shiftLabel_(shift){
+  return shift === 'BLUE' ? 'Biru' : 'Merah';
+}
+function renderDateSeparatedRows_(bodyId, rows, colCount, rowHtmlFn){
+  const body = document.getElementById(bodyId);
+  if(!body) return;
+  if(!rows.length){
+    body.innerHTML = `<tr><td colspan="${colCount}" style="text-align:center; color:var(--text-faint);">Belum ada data pada rentang ini</td></tr>`;
+    return;
+  }
+  let html = '';
+  let lastTanggal = null;
+  rows.forEach(r => {
+    if(r.tanggal !== lastTanggal){
+      lastTanggal = r.tanggal;
+      html += `<tr class="riwayat-date-separator"><td colspan="${colCount}"><span class="riwayat-date-label">${r.tanggal}</span></td></tr>`;
+    }
+    html += rowHtmlFn(r);
+  });
+  body.innerHTML = html;
+}
+
+function renderGsRincianNg(){
+  const badge = document.getElementById('gsRincianNgBadge');
+  if(badge) badge.textContent = (gsRincianFrom || gsRincianTo) ? `(${gsRincianFrom || 'awal'} s/d ${gsRincianTo || 'akhir'})` : '(Semua Data)';
+  const rows = buildGsRincianNgRows_();
+  const body = document.getElementById('tblGsRincianNg');
+  if(!body) return;
+  if(!rows.length){
+    body.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-faint);">Belum ada data pada rentang ini</td></tr>';
+    return;
+  }
+  // Kelompokkan per tanggal, hitung total Qty NG per MESIN -- ditampilkan di sebelah label
+  // tanggal, mirip pola di tabel Rincian Line Stop (biar tidak perlu jumlahin manual lagi).
+  const groups = [];
+  rows.forEach(r => {
+    if(!groups.length || groups[groups.length-1].tanggal !== r.tanggal){
+      groups.push({ tanggal: r.tanggal, rows: [] });
+    }
+    groups[groups.length-1].rows.push(r);
+  });
+  let html = '';
+  groups.forEach(g => {
+    const totals = {};
+    g.rows.forEach(r => { totals[r.mesin] = (totals[r.mesin] || 0) + r.qty; });
+    const totalHari = g.rows.reduce((s,r) => s + r.qty, 0);
+    const parts = MACHINES
+      .filter(m => totals[m.id])
+      .map(m => `${m.id}: <b style="color:var(--text);">${totals[m.id]} pcs</b>`);
+    parts.push(`Total: <b style="color:var(--text);">${totalHari} pcs</b>`);
+    html += `<tr><td colspan="6" style="padding:10px 8px; background:var(--panel-2); border-top:1px solid var(--border); border-bottom:1px solid var(--border);">
+      <div style="display:flex; align-items:center; flex-wrap:wrap; gap:10px;">
+        <span style="display:inline-block; background:var(--accent); color:var(--accent-ink); font-weight:800; font-size:11.5px; letter-spacing:.3px; padding:3px 10px; border-radius:5px;">${g.tanggal}</span>
+        <span style="font-size:11px; color:var(--text-faint);">${parts.join(' &middot; ')}</span>
+      </div>
+    </td></tr>`;
+    g.rows.forEach(r => {
+      html += `<tr><td>${r.tanggal}</td><td>${escapeHtml(r.part)}</td><td style="color:${machineColor_(r.mesin)}; font-weight:600;">${r.mesin}</td><td>${shiftLabel_(r.shift)}</td><td>${r.qty}</td><td>${escapeHtml(r.jenis)}</td></tr>`;
+    });
+  });
+  body.innerHTML = html;
+}
+
+function renderGsRincianLineStop(){
+  const badge = document.getElementById('gsRincianLineStopBadge');
+  if(badge) badge.textContent = (gsRincianFrom || gsRincianTo) ? `(${gsRincianFrom || 'awal'} s/d ${gsRincianTo || 'akhir'})` : '(Semua Data)';
+  const rows = buildGsRincianLineStopRows_();
+  const body = document.getElementById('tblGsRincianLineStop');
+  if(!body) return;
+  if(!rows.length){
+    body.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-faint);">Belum ada data pada rentang ini</td></tr>';
+    return;
+  }
+  // Kelompokkan per tanggal dulu, supaya bisa hitung total menit per kategori (Mesin/Dies/dst)
+  // buat ditampilkan di sebelah label tanggal -- biar tidak perlu jumlahin manual lagi.
+  const kategoriUrutan = ['Machine','Dies','Finger','Misgrip','Material','Others'];
+  const groups = [];
+  rows.forEach(r => {
+    if(!groups.length || groups[groups.length-1].tanggal !== r.tanggal){
+      groups.push({ tanggal: r.tanggal, rows: [] });
+    }
+    groups[groups.length-1].rows.push(r);
+  });
+  let html = '';
+  groups.forEach(g => {
+    const totals = {};
+    g.rows.forEach(r => { totals[r.kategoriKey] = (totals[r.kategoriKey] || 0) + r.menit; });
+    const totalHari = g.rows.reduce((s,r) => s + r.menit, 0);
+    const parts = kategoriUrutan
+      .filter(k => totals[k])
+      .map(k => `${LINE_STOP_CATEGORY_LABEL[k] || k}: <b style="color:var(--text);">${totals[k]} menit</b>`);
+    parts.push(`Total: <b style="color:var(--text);">${totalHari} menit</b>`);
+    html += `<tr><td colspan="7" style="padding:10px 8px; background:var(--panel-2); border-top:1px solid var(--border); border-bottom:1px solid var(--border);">
+      <div style="display:flex; align-items:center; flex-wrap:wrap; gap:10px;">
+        <span style="display:inline-block; background:var(--accent); color:var(--accent-ink); font-weight:800; font-size:11.5px; letter-spacing:.3px; padding:3px 10px; border-radius:5px;">${g.tanggal}</span>
+        <span style="font-size:11px; color:var(--text-faint);">${parts.join(' &middot; ')}</span>
+      </div>
+    </td></tr>`;
+    g.rows.forEach(r => {
+      html += `<tr><td>${r.tanggal}</td><td>${escapeHtml(r.part)}</td><td style="color:${machineColor_(r.mesin)}; font-weight:600;">${r.mesin}</td><td>${shiftLabel_(r.shift)}</td><td>${escapeHtml(r.kategori)}</td><td>${r.menit}</td><td>${escapeHtml(r.keterangan)}</td></tr>`;
+    });
+  });
+  body.innerHTML = html;
+}
+
+document.getElementById('gsRincianApplyBtn').addEventListener('click', () => {
+  gsRincianFrom = document.getElementById('gsRincianFrom').value || null;
+  gsRincianTo = document.getElementById('gsRincianTo').value || null;
+  renderGsRincianNg();
+  renderGsRincianLineStop();
+});
+document.getElementById('gsRincianResetBtn').addEventListener('click', () => {
+  gsRincianFrom = null; gsRincianTo = null;
+  document.getElementById('gsRincianFrom').value = '';
+  document.getElementById('gsRincianTo').value = '';
+  renderGsRincianNg();
+  renderGsRincianLineStop();
+});
+document.getElementById('exportGsRincianNgCsvBtn').addEventListener('click', () => {
+  const rows = buildGsRincianNgRows_().map(r => [r.tanggal, r.part, r.mesin, shiftLabel_(r.shift), r.qty, r.jenis]);
+  const rangeLabel = (gsRincianFrom || gsRincianTo) ? `${gsRincianFrom || 'awal'}_sd_${gsRincianTo || 'akhir'}` : 'semua-data';
+  exportTableToCsv(['Tanggal','Part Nomor','Mesin','Shift','Qty NG','Jenis NG'], rows, `rincian-ng-semua-mesin-${rangeLabel}`, 'SemuaMesin');
+});
+document.getElementById('exportGsRincianLineStopCsvBtn').addEventListener('click', () => {
+  const rows = buildGsRincianLineStopRows_().map(r => [r.tanggal, r.part, r.mesin, shiftLabel_(r.shift), r.kategori, r.menit, r.keterangan]);
+  const rangeLabel = (gsRincianFrom || gsRincianTo) ? `${gsRincianFrom || 'awal'}_sd_${gsRincianTo || 'akhir'}` : 'semua-data';
+  exportTableToCsv(['Tanggal','Part Nomor','Mesin','Shift','Jenis Problem','Total Waktu (menit)','Keterangan'], rows, `rincian-linestop-semua-mesin-${rangeLabel}`, 'SemuaMesin');
+});
+
 function renderGeneralSummary(){
   renderMonthlyMachineTables();
   renderDailyMachineTables();
+  renderGsRincianNg();
+  renderGsRincianLineStop();
 }
 function renderAll(){
   if(state.view === 'riwayat'){ renderRiwayatHeader(); renderRiwayat(); }
