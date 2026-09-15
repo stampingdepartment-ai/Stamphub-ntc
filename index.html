@@ -13,7 +13,7 @@
 <script>
   // Diisi otomatis oleh Apps Script saat halaman ini di-deploy & dibuka.
   // Kalau file ini dibuka langsung sebagai HTML biasa (bukan lewat Apps Script), akan kosong.
-  var SELF_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyHPoaYJM-aiCuKHEfbnmi7i_NxjZDGBKaVnWL88B8JRp79PzOUSii9_EsQx7s62rusWA/exec";
+  var SELF_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwCJy7nttB731S_pJiAUfY6XUvXMAWW8fYaoIKJpZuFhE8RyxlR-nk2RKcwlfPOccnbjg/exec";
 </script>
 <script>
 /*!
@@ -388,6 +388,17 @@ input[type="time"]::-webkit-calendar-picker-indicator{
   .badge-warn{ background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
   .badge-bad{ background: color-mix(in srgb, var(--danger) 18%, transparent); color: var(--danger); }
   .empty-state{ text-align:center; padding: 50px 20px; color: var(--text-faint); }
+
+  /* ---------- Header tabel Record Data "freeze" (nempel) pas discroll ----------
+     Tabel ini punya banyak kolom (scroll ke samping), dan itu bikin position:sticky
+     versi "nempel ke halaman" tidak jalan (overflow-x:auto tanpa sengaja ikut membatasi
+     arah vertikal juga). Solusinya: kasih tabel ini kotak scroll SENDIRI (atas-bawah +
+     kanan-kiri), supaya header bisa nempel di dalam kotak itu dengan benar. */
+  #view-riwayat .table-wrap{
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  #view-riwayat thead th{ top:0; z-index:5; }
 
   /* ---------- Baris pemisah tanggal di tabel Record Data ---------- */
   .riwayat-date-separator td{
@@ -974,13 +985,25 @@ input[type="time"]::-webkit-calendar-picker-indicator{
   </div>
 </div>
 <main>
-<div id="activeMachineTitle" style="display:flex; align-items:center; gap:10px; margin-bottom:18px; padding:10px 16px; background:var(--panel-2); border:1px solid var(--border); border-radius:8px;">
+<div id="activeMachineTitle" style="display:flex; align-items:center; gap:10px; margin-bottom:18px; padding:10px 16px; background:var(--panel-2); border:1px solid var(--border); border-radius:8px; position:sticky; top:var(--topbar-height, 65px); z-index:22;">
   <span style="width:10px; height:10px; border-radius:50%; background:var(--accent); flex-shrink:0;"></span>
   <span style="font-size:13px; color:var(--text-dim); font-weight:600;">Mesin:</span>
   <span id="activeMachineName" style="font-size:15px; color:var(--text); font-weight:800; font-family:var(--mono); letter-spacing:.3px;"></span>
 </div>
   <!-- ============ INPUT VIEW ============ -->
   <section class="view active" id="view-input">
+    <div id="pendingReviewOverlay" style="display:none; text-align:center; padding:60px 20px;">
+      <div style="font-size:48px; margin-bottom:16px;">&#9203;</div>
+      <h2 style="margin-bottom:10px;">Menunggu Review Laporan Sebelumnya</h2>
+      <p style="color:var(--text-faint); max-width:480px; margin:0 auto 20px;">
+        Laporan terakhir yang kamu simpan harus di-review dulu oleh <b>GL/FM</b> atau <b>SPV UP</b>
+        (salah satu saja) sebelum kamu bisa lanjut input laporan berikutnya.
+      </p>
+      <div id="pendingReviewStatus" style="display:inline-flex; flex-direction:column; gap:10px; text-align:left; background:var(--panel-2); border:1px solid var(--border); border-radius:10px; padding:16px 24px; margin-bottom:20px;"></div>
+      <div>
+        <button type="button" class="btn btn-primary" id="pendingReviewRefreshBtn">&#128260; Cek Status Terbaru</button>
+      </div>
+    </div>
     <form id="entryForm">
       <input type="hidden" id="entryId">
 
@@ -1143,7 +1166,7 @@ input[type="time"]::-webkit-calendar-picker-indicator{
             <th>GSPH</th><th>Status</th><th>Jam Mulai</th><th>Jam Selesai</th>
             <th>Total (Jam)</th><th>Total (Menit)</th><th>Dandori</th><th>%Dandori</th>
             <th>Stop Terplan</th><th>Menit Terplan</th><th>Total Line Stop</th><th>%Line Stop</th>
-            <th>Waktu Efektif</th><th>%Efisiensi</th><th>Konfirmasi</th><th>Aksi</th>
+            <th>Waktu Efektif</th><th>%Efisiensi</th><th>Konfirmasi</th><th>Aksi</th><th>Review GL/FM</th><th>Review SPV UP</th>
           </tr>
         </thead>
         <tbody id="riwayatBody"></tbody>
@@ -1163,11 +1186,8 @@ input[type="time"]::-webkit-calendar-picker-indicator{
   <!-- ============ DASHBOARD VIEW ============ -->
   <section class="view" id="view-dashboard">
     <div id="earlyWarningBanner" style="display:none; background:color-mix(in srgb, var(--danger) 14%, transparent); border:1px solid color-mix(in srgb, var(--danger) 40%, transparent); color:var(--danger); border-radius:10px; padding:12px 16px; margin-bottom:14px; font-size:13px; font-weight:600;"></div>
+    <div id="unreviewedWarningBanner" style="display:none; background:color-mix(in srgb, #f4b740 16%, transparent); border:1px solid color-mix(in srgb, #f4b740 45%, transparent); color:#f4b740; border-radius:10px; padding:12px 16px; margin-bottom:14px; font-size:13px; font-weight:600;"></div>
 
-    <div class="summary-filter-card" style="margin-bottom:14px;">
-      <span class="summary-filter-targetlabel" style="margin-bottom:8px; display:block;">Approval Shift &mdash; <span id="approvalShiftMachineLabel">Mc_1600TR</span></span>
-      <div id="approvalShiftSection"></div>
-    </div>
     <div class="summary-filter-card" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px; padding:12px 16px;">
       <div class="summary-filter-pills" id="dashboardRangePills">
         <label class="summary-filter-pill"><input type="radio" name="dashboardRange" value="today" checked> Hari Ini</label>
@@ -1259,6 +1279,7 @@ input[type="time"]::-webkit-calendar-picker-indicator{
 
   <!-- ============ SUMMARY VIEW ============ -->
   <section class="view" id="view-summary">
+    <div id="ringkasanFilterSticky" style="position:sticky; top:var(--machinebar-bottom, 130px); z-index:20; background:var(--bg); padding-top:4px; padding-bottom:4px; margin-bottom:0;">
     <h2 class="section-title">Ringkasan (Tabel)</h2>
     <div class="summary-filter-card">
       <div class="summary-filter-daterow">
@@ -1286,6 +1307,7 @@ input[type="time"]::-webkit-calendar-picker-indicator{
           </div>
         </div>
       </div>
+    </div>
     </div>
     <div class="grid cols-2">
       <div class="chart-card" style="grid-column:1 / -1;">
@@ -1575,6 +1597,12 @@ jenisScrap: e.jenisScrap || '',
     qtyNg: Number(e.qtyNg) || 0,
     ngRows: Array.isArray(e.ngRows) ? e.ngRows.map(r => ({ jenis: (r&&r.jenis)||'', qty: Number(r&&r.qty)||0 })) : [],
     alasanTidakSesuai: e.alasanTidakSesuai || '',
+    reviewedByGLFM: !!e.reviewedByGLFM,
+    reviewedByName: e.reviewedByName || '',
+    reviewedByTime: e.reviewedByTime || '',
+    reviewedBySPV: !!e.reviewedBySPV,
+    reviewedBySPVName: e.reviewedBySPVName || '',
+    reviewedBySPVTime: e.reviewedBySPVTime || '',
     spm: Number(e.spm) || 0,
     spmKajuhekin: Number(e.spmKajuhekin) || 0,
     gsph: (e.gsph === undefined || e.gsph === null || e.gsph === '') ? null : Number(e.gsph),
@@ -1920,7 +1948,7 @@ function setConfig(cfg){ localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg)); 
 // setiap kali script di-deploy ulang (root cause dari error "Aksi tidak dikenali").
 // Kalau halaman dibuka sebagai HTML biasa (SELF_SCRIPT_URL kosong), config manual
 // yang tersimpan di localStorage tetap dihormati (mode "Hubungkan Sheets" manual).
-const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyHPoaYJM-aiCuKHEfbnmi7i_NxjZDGBKaVnWL88B8JRp79PzOUSii9_EsQx7s62rusWA/exec";
+const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwCJy7nttB731S_pJiAUfY6XUvXMAWW8fYaoIKJpZuFhE8RyxlR-nk2RKcwlfPOccnbjg/exec";
 
 (function autoConnect(){
   const isAppsScriptHost = /(^|\.)script\.google\.com$|(^|\.)googleusercontent\.com$/i.test(location.hostname);
@@ -1980,123 +2008,6 @@ async function apiDelete(id){
   if(!data.ok){ handleAuthFailureIfNeeded(data.error); throw new Error(data.error || 'Gagal menghapus di Sheets'); }
 }
 
-/** Approval Shift: GL/FM & SPV UP "tanda tangan" digital tiap shift selesai (WS1 16:30/19:45,
- *  WS2 05:05/07:00). Tersimpan di tab "Approvals" Google Sheets (bukan localStorage) supaya
- *  GL/FM & SPV UP bisa approve dari device berbeda dan hasilnya sama-sama kelihatan. */
-async function apiGetApprovals(machineId){
-  const cfg = getConfig();
-  if(!cfg.scriptUrl) return [];
-  try{
-    const res = await fetch(`${cfg.scriptUrl}?action=approvals&machine=${encodeURIComponent(machineId)}`);
-    const data = await res.json();
-    return (data.ok && Array.isArray(data.approvals)) ? data.approvals : [];
-  }catch(e){
-    return [];
-  }
-}
-async function apiSaveApproval(machineId, tanggal, ws, field){
-  const cfg = getConfig();
-  if(!cfg.scriptUrl) throw new Error('Aplikasi belum terhubung ke Google Sheets.');
-  const res = await fetch(cfg.scriptUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action: 'saveApproval', machine: machineId, tanggal, ws, field, token: getAuthToken() })
-  });
-  const data = await res.json();
-  if(!data.ok){ handleAuthFailureIfNeeded(data.error); throw new Error(data.error || 'Gagal menyimpan approval'); }
-  return data;
-}
-
-let approvalCache_ = {}; // machineId -> array hasil apiGetApprovals() terakhir
-
-function findApprovalRecord_(machineId, tanggal, ws){
-  const list = approvalCache_[machineId] || [];
-  return list.find(a => a.tanggal === tanggal && a.ws === ws) || null;
-}
-
-/** Ambil ulang data approval dari server lalu render -- dipanggil tiap renderDashboard()
- *  supaya statusnya selalu ter-update kalau ada yang baru approve dari device lain. */
-async function refreshApprovalSection(){
-  const machineId = state.machine;
-  const list = await apiGetApprovals(machineId);
-  approvalCache_[machineId] = list;
-  if(state.view === 'dashboard' && state.machine === machineId) renderApprovalSection();
-}
-
-function renderApprovalSection(){
-  const container = document.getElementById('approvalShiftSection');
-  if(!container) return;
-  const labelEl = document.getElementById('approvalShiftMachineLabel');
-  if(labelEl) labelEl.textContent = (currentMachine() || {}).label || state.machine;
-
-  const now = new Date();
-  const nowMinutes = now.getHours()*60 + now.getMinutes();
-  const todayStr = localDateStr(now);
-  const yesterdayStr = localDateStr(new Date(now.getTime() - 86400000));
-
-  const rows = [];
-  if(nowMinutes >= 16*60+30){
-    rows.push({ ws:'WS1', label:'Shift Siang', tanggal: todayStr, deadlineLabel: nowMinutes >= 19*60+45 ? '(selesai OT 19:45)' : '(selesai 16:30)' });
-  }
-  if(nowMinutes >= 5*60+5){
-    rows.push({ ws:'WS2', label:'Shift Malam', tanggal: yesterdayStr, deadlineLabel: nowMinutes >= 7*60 ? '(selesai OT 07:00)' : '(selesai 05:05)' });
-  }
-
-  if(rows.length === 0){
-    container.innerHTML = '<p style="color:var(--text-faint); font-size:12.5px; margin:0;">Belum ada shift yang perlu di-approve hari ini &mdash; muncul otomatis begitu shift siang lewat jam 16:30 atau shift malam lewat jam 05:05.</p>';
-    return;
-  }
-
-  const isGlfm = isOperatorUser() || isAdminUser();
-  const isSpv = isSpvUpUser() || isAdminUser();
-
-  container.innerHTML = rows.map(r => {
-    const rec = findApprovalRecord_(state.machine, r.tanggal, r.ws) || {};
-    const glfmDone = !!rec.glfmName;
-    const spvDone = !!rec.spvName;
-
-    let statusHtml;
-    if(glfmDone && spvDone) statusHtml = `<span style="color:var(--good); font-weight:700; font-size:12px;">&#9989; SELESAI &amp; DISETUJUI</span>`;
-    else if(glfmDone) statusHtml = `<span style="color:#f4b740; font-weight:700; font-size:12px;">Menunggu Approval SPV UP</span>`;
-    else statusHtml = `<span style="color:var(--danger); font-weight:700; font-size:12px;">Menunggu Konfirmasi GL/FM</span>`;
-
-    const glfmLine = glfmDone
-      ? `<div style="font-size:11.5px; color:var(--text-faint);">GL/FM: <b style="color:var(--text);">${escapeHtml(rec.glfmName)}</b><br>${rec.glfmTime}</div>`
-      : (isGlfm ? `<button class="btn btn-primary btn-sm approval-btn" data-ws="${r.ws}" data-tanggal="${r.tanggal}" data-field="glfm">Konfirmasi Selesai (GL/FM)</button>` : `<div style="font-size:11.5px; color:var(--text-faint);">Menunggu GL/FM</div>`);
-
-    const spvLine = spvDone
-      ? `<div style="font-size:11.5px; color:var(--text-faint);">SPV UP: <b style="color:var(--text);">${escapeHtml(rec.spvName)}</b><br>${rec.spvTime}</div>`
-      : (glfmDone && isSpv ? `<button class="btn btn-primary btn-sm approval-btn" data-ws="${r.ws}" data-tanggal="${r.tanggal}" data-field="spv">Approve (SPV UP)</button>` : `<div style="font-size:11.5px; color:var(--text-faint);">${glfmDone ? 'Menunggu SPV UP' : 'Menunggu GL/FM dulu'}</div>`);
-
-    return `<div style="background:var(--panel-2); border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:10px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:8px;">
-        <b style="font-size:13px;">${r.label} &mdash; ${r.tanggal} <span style="font-weight:400; color:var(--text-faint); font-size:11px;">${r.deadlineLabel}</span></b>
-        ${statusHtml}
-      </div>
-      <div style="display:flex; gap:24px; flex-wrap:wrap;">
-        <div>${glfmLine}</div>
-        <div>${spvLine}</div>
-      </div>
-    </div>`;
-  }).join('');
-
-  container.querySelectorAll('.approval-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      btn.disabled = true;
-      const originalText = btn.textContent;
-      btn.textContent = 'Menyimpan...';
-      try{
-        await apiSaveApproval(state.machine, btn.dataset.tanggal, btn.dataset.ws, btn.dataset.field);
-        toast('Approval berhasil disimpan.');
-        await refreshApprovalSection();
-      }catch(err){
-        toast('Gagal: ' + err.message);
-        btn.disabled = false;
-        btn.textContent = originalText;
-      }
-    });
-  });
-}
 async function apiGetMaster(){
   const cfg = getConfig();
   if(!cfg.scriptUrl) return null;
@@ -2389,6 +2300,7 @@ async function syncFromServer(showToast){
     await syncMasterFromServer();
     state.lastSyncAt = new Date().toISOString();
     updateDashboardLastSync();
+    checkPendingReviewStatus(); // kalau ada laporan yang lagi ditunggu direview, cek statusnya ikut ke-update di sini
   }catch(err){
     toast('Gagal memuat dari Sheets: ' + err.message);
   }
@@ -2514,6 +2426,7 @@ document.getElementById('machineSelect').addEventListener('change', (e) => {
   document.getElementById('ngRows').innerHTML = '';
   addNgRow();
   recomputeStrip();
+  if(state.view === 'input') syncPendingReviewOverlayVisibility();
   renderAll();
   if(state.view === 'riwayat' || state.view === 'dashboard' || state.view === 'summary' || state.view === 'generalsummary'){
     syncFromServer();
@@ -2562,6 +2475,7 @@ document.getElementById('tabs').addEventListener('click', (e) => {
   applyAccent(); // ikutkan warna khusus General Summary kalau lagi pindah ke/dari view itu
   renderMachinePicker(); // sinkronkan dropdown pilih mesin (mis. balik dari General Summary ke mesin aktif)
   updateMachineSelectVisibility();
+  if(state.view === 'input') syncPendingReviewOverlayVisibility();
   renderAll();
   if(state.view === 'riwayat' || state.view === 'dashboard' || state.view === 'summary' || state.view === 'generalsummary'){
     syncFromServer();
@@ -2804,6 +2718,10 @@ const pctEfisiensi = pctEfisiensiDenom > 0 ? Math.round((efektif/pctEfisiensiDen
   const pcsokForStatus = Number(document.getElementById('f_pcsok').value) || 0;
   const statusLive = statusPilihan === 'auto' ? computeAutoStatus(pcsokForStatus, planning) : statusPilihan;
   document.getElementById('f_status_live').value = statusLive;
+  const alasanSuffixEl = document.getElementById('f_alasan_label_suffix');
+  if(alasanSuffixEl){
+    alasanSuffixEl.textContent = statusLive === 'Produksi Sesuai' ? '(opsional)' : '(wajib diisi)';
+  }
 
   return { totalMenit, totalJam: Number(totalJam), stopTerencana, stopTakTerencana: lineStop,
   lineStop, efektif, pctLineStop, pctDandori, pctEfisiensi, pctStopTerplan };
@@ -2914,10 +2832,12 @@ document.getElementById('entryForm').addEventListener('submit', (e) => {
     }
   }
 
-  // BLOK KERAS: Alasan wajib diisi — baik status Sesuai maupun Tidak Sesuai (lihat PDF Perbaikan_Script poin 4).
+  // BLOK KERAS: Alasan cuma wajib diisi kalau status-nya Over Produksi / Kurang.
+  // Kalau statusnya Sesuai, Alasan boleh dikosongkan.
+  const statusLiveVal = document.getElementById('f_status_live').value.trim();
   const alasanVal = document.getElementById('f_alasan_tidaksesuai').value.trim();
-  if(!alasanVal){
-    toast('Kolom Alasan wajib diisi sebelum menyimpan data (misal: "Produksi sesuai planning" kalau memang sesuai).');
+  if(statusLiveVal !== 'Produksi Sesuai' && !alasanVal){
+    toast('Kolom Alasan wajib diisi karena status produksi ' + (statusLiveVal || 'ini') + ' (di luar toleransi ±10% dari Planning).');
     return;
   }
 
@@ -2941,6 +2861,82 @@ document.getElementById('entryForm').addEventListener('submit', (e) => {
 
 document.getElementById('cancelSaveBtn').addEventListener('click', () => {
   document.getElementById('confirmSaveModal').classList.remove('show');
+});
+
+/** Blokir lanjut ke laporan berikutnya sampai GL/FM DAN SPV UP review laporan yang baru
+ *  disimpan (Admin selalu bebas, tidak kena blokir ini). Status pending disimpan di
+ *  localStorage supaya tidak hilang kalau halaman di-refresh -- operator benar-benar harus
+ *  menunggu direview, bukan cuma sampai reload halaman. */
+const PENDING_REVIEW_KEY = 'stamphubPendingReview_v1';
+function getPendingReview(){
+  try{ return JSON.parse(localStorage.getItem(PENDING_REVIEW_KEY)) || null; }catch(e){ return null; }
+}
+function setPendingReview(obj){
+  if(obj) localStorage.setItem(PENDING_REVIEW_KEY, JSON.stringify(obj));
+  else localStorage.removeItem(PENDING_REVIEW_KEY);
+}
+function showPendingReviewOverlay(){
+  const overlay = document.getElementById('pendingReviewOverlay');
+  const form = document.getElementById('entryForm');
+  if(overlay) overlay.style.display = 'block';
+  if(form) form.style.display = 'none';
+  renderPendingReviewStatus();
+}
+function hidePendingReviewOverlay(){
+  const overlay = document.getElementById('pendingReviewOverlay');
+  const form = document.getElementById('entryForm');
+  if(overlay) overlay.style.display = 'none';
+  if(form) form.style.display = '';
+}
+/** Sinkronkan tampilan overlay dengan status pending yang tersimpan -- dipanggil saat pindah
+ *  ke tab Entry Data dan saat init, supaya blokirnya tetap berlaku walau halaman di-refresh
+ *  atau pindah tab lalu balik lagi. */
+function syncPendingReviewOverlayVisibility(){
+  const pending = getPendingReview();
+  if(pending && pending.machine === state.machine) showPendingReviewOverlay();
+  else hidePendingReviewOverlay();
+}
+function renderPendingReviewStatus(){
+  const pending = getPendingReview();
+  const statusEl = document.getElementById('pendingReviewStatus');
+  if(!pending || !statusEl) return;
+  const entries = getEntries(pending.machine);
+  const entry = entries.find(x => x.id === pending.id);
+  if(!entry){ statusEl.innerHTML = '<div style="color:var(--text-faint);">Memuat status laporan...</div>'; return; }
+  const glfmHtml = entry.reviewedByGLFM
+    ? `&#9989; GL/FM: <b>${escapeHtml(entry.reviewedByName)}</b> <span style="color:var(--text-faint); font-size:11px;">(${entry.reviewedByTime})</span>`
+    : `&#8987; GL/FM: <span style="color:var(--danger); font-weight:600;">Belum direview</span>`;
+  const spvHtml = entry.reviewedBySPV
+    ? `&#9989; SPV UP: <b>${escapeHtml(entry.reviewedBySPVName)}</b> <span style="color:var(--text-faint); font-size:11px;">(${entry.reviewedBySPVTime})</span>`
+    : `&#8987; SPV UP: <span style="color:var(--danger); font-weight:600;">Belum direview</span>`;
+  statusEl.innerHTML = `<div>${glfmHtml}</div><div>${spvHtml}</div>`;
+}
+/** Cek apakah laporan yang lagi ditunggu sudah direview LENGKAP (GL/FM & SPV UP dua-duanya).
+ *  Kalau sudah, otomatis buka kunci form & reset ke laporan baru. */
+function checkPendingReviewStatus(){
+  const pending = getPendingReview();
+  if(!pending) return;
+  const entries = getEntries(pending.machine);
+  const entry = entries.find(x => x.id === pending.id);
+  if(entry && (entry.reviewedByGLFM || entry.reviewedBySPV)){
+    setPendingReview(null);
+    hidePendingReviewOverlay();
+    resetForm();
+    const reviewer = entry.reviewedByGLFM ? 'GL/FM' : 'SPV UP';
+    toast(`Laporan sudah direview (${reviewer}) -- silakan lanjut input laporan berikutnya.`);
+    return;
+  }
+  renderPendingReviewStatus();
+}
+document.getElementById('pendingReviewRefreshBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('pendingReviewRefreshBtn');
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = 'Mengecek...';
+  try{ await syncFromServer(); }catch(e){ /* biarkan, tetap cek dari cache lokal di bawah */ }
+  checkPendingReviewStatus();
+  btn.disabled = false;
+  btn.textContent = original;
 });
 
 document.getElementById('confirmSaveBtn').addEventListener('click', async () => {
@@ -2987,11 +2983,21 @@ frekCoolant: document.getElementById('f_frekcoolant').value,
   };
   entry.statusLabel = statusFor(entry);
 
+  const isNewEntry = !isEdit;
+  const shouldBlockNext = isNewEntry && !isAdminUser(); // Admin selalu bebas lanjut, tidak dikunci
+
   const entries = getEntries(state.machine);
   const idx = entries.findIndex(x => x.id === entry.id);
   if(idx >= 0) entries[idx] = entry; else entries.push(entry);
   setEntries(state.machine, entries);
-  resetForm();
+
+  if(shouldBlockNext){
+    setPendingReview({ machine: state.machine, id: entry.id });
+    showPendingReviewOverlay();
+    isEntryFormDirty = false; // sudah tersimpan -- bukan "unsaved changes" lagi, walau resetForm() tidak dipanggil di sini
+  } else {
+    resetForm();
+  }
   renderAll();
   renderSyncStatusBadge();
 
@@ -3200,12 +3206,25 @@ function renderRiwayat(){
         ${isAdminUser() ? `<button class="btn btn-ghost btn-sm" data-edit="${entry.id}">Edit</button>
         <button class="btn btn-danger btn-sm" data-del="${entry.id}">Hapus</button>` : '—'}
       </td>
+      <td>
+        ${entry.reviewedByGLFM
+          ? `<span style="color:var(--good); font-weight:700; font-size:11.5px;">&#9989; ${escapeHtml(entry.reviewedByName || '')}<br><span style="font-weight:400; color:var(--text-faint);">${entry.reviewedByTime || ''}</span></span>`
+          : ((isOperatorUser() || isAdminUser()) ? `<button class="btn btn-ghost btn-sm" data-review="${entry.id}" data-field="glfm">Review (GL/FM)</button>` : `<span style="color:var(--danger); font-size:11.5px;">Belum direview</span>`)
+        }
+      </td>
+      <td>
+        ${entry.reviewedBySPV
+          ? `<span style="color:var(--good); font-weight:700; font-size:11.5px;">&#9989; ${escapeHtml(entry.reviewedBySPVName || '')}<br><span style="font-weight:400; color:var(--text-faint);">${entry.reviewedBySPVTime || ''}</span></span>`
+          : ((isSpvUpUser() || isAdminUser()) ? `<button class="btn btn-ghost btn-sm" data-review="${entry.id}" data-field="spv">Review (SPV UP)</button>` : `<span style="color:var(--danger); font-size:11.5px;">Belum direview</span>`)
+        }
+      </td>
     `;
     body.appendChild(tr);
   });
 
   body.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => editEntry(b.dataset.edit)));
   body.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => deleteEntry(b.dataset.del)));
+  body.querySelectorAll('[data-review]').forEach(b => b.addEventListener('click', () => reviewEntry(b.dataset.review, b.dataset.field)));
 }
 
 function editEntry(id){
@@ -3266,6 +3285,45 @@ async function deleteEntry(id){
     catch(err){ toast('Dihapus lokal, tapi gagal sync: ' + err.message); }
   } else {
     toast('Laporan dihapus (lokal)');
+  }
+}
+
+/** Review GL/FM: menandai 1 laporan sudah diperiksa GL/FM. Nama & waktu diambil dari sesi
+ *  login (server yang catat, bukan input manual), sama polanya dengan Approval Shift. */
+async function apiSetReview(machineId, id, field){
+  const cfg = getConfig();
+  if(!cfg.scriptUrl) throw new Error('Aplikasi belum terhubung ke Google Sheets.');
+  const res = await fetch(cfg.scriptUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'setReview', machine: machineId, id, field, token: getAuthToken() })
+  });
+  const data = await res.json();
+  if(!data.ok){ handleAuthFailureIfNeeded(data.error); throw new Error(data.error || 'Gagal menyimpan review'); }
+  return data;
+}
+async function reviewEntry(id, field){
+  try{
+    const result = await apiSetReview(state.machine, id, field);
+    const entries = getEntries(state.machine);
+    const idx = entries.findIndex(x => x.id === id);
+    if(idx >= 0){
+      if(field === 'spv'){
+        entries[idx].reviewedBySPV = true;
+        entries[idx].reviewedBySPVName = result.name || '-';
+        entries[idx].reviewedBySPVTime = result.time || '';
+      } else {
+        entries[idx].reviewedByGLFM = true;
+        entries[idx].reviewedByName = result.name || '-';
+        entries[idx].reviewedByTime = result.time || '';
+      }
+      setEntries(state.machine, entries);
+    }
+    toast('Laporan berhasil di-review.');
+    renderAll();
+    checkPendingReviewStatus();
+  }catch(err){
+    toast('Gagal review: ' + err.message);
   }
 }
 
@@ -3638,7 +3696,8 @@ function renderEarlyWarningBanner(){
       }
     }
 
-    if(!isNonProductionDay(yesterdayStr)){
+    if(!isNonProductionDay(yesterdayStr) && m.id !== '300BP'){
+      // Mc_300BP tidak punya shift malam sama sekali, jadi dikecualikan dari cek ini.
       const entriesYesterday = getEntries(m.id).filter(e => e.tanggal === yesterdayStr);
       const hasMalamYesterday = entriesYesterday.some(e => classifyShiftWindow_(e.jamMulai) === 'malam');
       if(nowMinutes >= MALAM_DEADLINE && !hasMalamYesterday){
@@ -3657,10 +3716,24 @@ function renderEarlyWarningBanner(){
   if(holidayBtn) holidayBtn.addEventListener('click', openHolidayModal);
 }
 
+/** Warning terpisah dari Early Warning: bukan soal laporan BELUM ADA, tapi laporan SUDAH ADA
+ *  tapi belum di-review GL/FM (kolom "Review GL/FM" di Record Data) -- scope hari ini, mesin aktif. */
+function renderUnreviewedWarningBanner(){
+  const banner = document.getElementById('unreviewedWarningBanner');
+  if(!banner) return;
+  const todayStr = localDateStr(new Date());
+  const unreviewed = getEntries(state.machine).filter(e => e.tanggal === todayStr && !e.reviewedByGLFM);
+  if(unreviewed.length === 0){
+    banner.style.display = 'none';
+    return;
+  }
+  banner.style.display = 'block';
+  banner.innerHTML = `&#9888;&#65039; Ada <b>${unreviewed.length} laporan</b> hari ini di ${(currentMachine()||{}).label || state.machine} yang belum di-review GL/FM &mdash; cek kolom "Review GL/FM" di Record Data.`;
+}
+
 function renderDashboard(){
   renderEarlyWarningBanner();
-  renderApprovalSection(); // render dulu pakai cache lama (kalau ada), biar tidak kedip kosong
-  refreshApprovalSection(); // lalu ambil data terbaru dari server (async)
+  renderUnreviewedWarningBanner();
   const entries = getEntries(state.machine).slice().sort((a,b)=> a.tanggal.localeCompare(b.tanggal));
   const accent = currentMachine().color;
   const COLOR_RED = '#ef4444', COLOR_BLUE = '#60a5fa';
@@ -4971,6 +5044,15 @@ function renderDailyMachineTables(){
   const prevMonth = month === 1 ? 12 : month - 1;
   const prevYear = month === 1 ? year - 1 : year;
   const prevMetrics = computeRataRataAllMetrics_(machineIds, buildDailyMachineData(prevYear, prevMonth).data);
+  // Kalau bulan sebelumnya belum ada laporan asli sama sekali, tapi ada data referensi GSPH
+  // historis buat bulan itu (lihat GSPH_HISTORICAL_OVERRIDE) -- pakai itu sebagai pembanding,
+  // supaya badge tren GSPH tetap bisa muncul walau belum ada 2 bulan data asli berturut-turut.
+  machineIds.forEach(mId => {
+    if(prevMetrics.gsph[mId] === null){
+      const refVal = GSPH_HISTORICAL_OVERRIDE[mId] && GSPH_HISTORICAL_OVERRIDE[mId][prevYear] && GSPH_HISTORICAL_OVERRIDE[mId][prevYear][prevMonth];
+      if(refVal !== undefined) prevMetrics.gsph[mId] = refVal;
+    }
+  });
 
   document.getElementById('gsphHariMesinTitle').textContent = `GSPH/HARI/MESIN - ${namaBulan}`;
   document.getElementById('strokeHariMesinTitle').textContent = `STROKE/HARI/MESIN - ${namaBulan}`;
@@ -5133,6 +5215,23 @@ function renderAll(){
 /* ============================================================
    INIT
 ============================================================ */
+/** Ukur tinggi bar biru (.topbar) yang sudah "freeze" di atas, supaya bar "Mesin: ..." dan
+ *  elemen sticky lain bisa ikut freeze PAS di bawahnya (tanpa celah/tabrakan) -- dipakai lewat
+ *  CSS var --topbar-height. Sekalian ukur gabungan tinggi topbar + bar Mesin (--machinebar-bottom)
+ *  supaya elemen sticky BERIKUTNYA (mis. kartu filter Ringkasan Tabel) bisa nempel PAS di bawah
+ *  keduanya, bukan malah menutupi/celah. */
+function syncTopbarHeightVar(){
+  const topbar = document.querySelector('.topbar');
+  const topbarH = topbar ? topbar.offsetHeight : 0;
+  document.documentElement.style.setProperty('--topbar-height', topbarH + 'px');
+  const machineBar = document.getElementById('activeMachineTitle');
+  const machineBarH = machineBar ? machineBar.offsetHeight : 0;
+  document.documentElement.style.setProperty('--machinebar-bottom', (topbarH + machineBarH) + 'px');
+}
+window.addEventListener('load', syncTopbarHeightVar);
+window.addEventListener('resize', syncTopbarHeightVar);
+syncTopbarHeightVar();
+
 applyAccent();
 renderMachinePicker();
 updateMachineSelectVisibility();
@@ -5143,6 +5242,7 @@ addProblemRow();
 recomputeStrip();
 updateSyncBanner();
 renderOfflineBadge();
+syncPendingReviewOverlayVisibility(); // kunci form Entry Data dari awal kalau masih ada laporan yg belum lengkap direview
 renderAll();
 renderSyncStatusBadge();
 syncFromServer(false);
