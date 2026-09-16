@@ -1122,6 +1122,13 @@ input[type="time"]::-webkit-calendar-picker-indicator{
         </div>
       </div>
 
+      <h2 class="section-title" id="panjangCoilTitle" style="display:none;">Panjang Coil</h2>
+      <div class="card" id="panjangCoilCard" style="display:none;">
+        <div class="grid cols-3">
+          <div class="field"><label>Panjang Coil (mm)</label><input type="number" id="f_panjangcoil" min="0" placeholder="Contoh: 12000"></div>
+        </div>
+      </div>
+
       <h2 class="section-title">Konfirmasi</h2>
       <div class="card">
         <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
@@ -1175,7 +1182,7 @@ input[type="time"]::-webkit-calendar-picker-indicator{
             <th>GSPH</th><th>Status</th><th>Jam Mulai</th><th>Jam Selesai</th>
             <th>Total (Jam)</th><th>Total (Menit)</th><th>Dandori</th><th>%Dandori</th>
             <th>Stop Terplan</th><th>Menit Terplan</th><th>Total Line Stop</th><th>%Line Stop</th>
-            <th>Waktu Efektif</th><th>%Efisiensi</th><th>Konfirmasi</th><th>Aksi</th><th>Review GL/FM</th>
+            <th>Waktu Efektif</th><th>%Efisiensi</th><th>Konfirmasi</th><th>Frek Coolant</th><th>Panjang Coil (mm)</th><th>Aksi</th><th>Review GL/FM</th>
           </tr>
         </thead>
         <tbody id="riwayatBody"></tbody>
@@ -1651,6 +1658,7 @@ function normalizeEntry(e){
     stroke: Number(e.stroke) || 0,
     pcsok: Number(e.pcsok) || 0,
 frekCoolant: e.frekCoolant || '',
+panjangCoil: Number(e.panjangCoil) || 0,
 jenisScrap: e.jenisScrap || '',
     qtyNg: Number(e.qtyNg) || 0,
     ngRows: Array.isArray(e.ngRows) ? e.ngRows.map(r => ({ jenis: (r&&r.jenis)||'', qty: Number(r&&r.qty)||0 })) : [],
@@ -2449,6 +2457,22 @@ function toast(msg){
 ============================================================ */
 function currentMachine(){ return MACHINES.find(m => m.id === state.machine); }
 
+/** Field "Panjang Coil (mm)" di Entry Data cuma relevan buat mesin 800BP & 300BP (mesin
+ *  slitting/blanking coil) -- 1600TR & 2500TR tidak pakai coil, jadi field-nya disembunyikan
+ *  sama sekali (bukan cuma dikosongin) supaya tidak membingungkan operator mesin lain. */
+const MACHINES_WITH_PANJANG_COIL = ['800BP', '300BP'];
+function updatePanjangCoilVisibility(){
+  const show = MACHINES_WITH_PANJANG_COIL.includes(state.machine);
+  const title = document.getElementById('panjangCoilTitle');
+  const card = document.getElementById('panjangCoilCard');
+  if(title) title.style.display = show ? '' : 'none';
+  if(card) card.style.display = show ? '' : 'none';
+  if(!show){
+    const input = document.getElementById('f_panjangcoil');
+    if(input) input.value = '';
+  }
+}
+
 function renderMachinePicker(){
   const sel = document.getElementById('machineSelect');
   let optionsHtml = MACHINES.map(m =>
@@ -2477,6 +2501,7 @@ document.getElementById('machineSelect').addEventListener('change', (e) => {
   }
   state.machine = e.target.value;
   applyAccent();
+  updatePanjangCoilVisibility();
   renderMachinePicker();
   seedMasterFromEntries(state.machine, getEntries(state.machine));
   refreshMasterSelects('', '');
@@ -3069,6 +3094,7 @@ document.getElementById('confirmSaveBtn').addEventListener('click', async () => 
     stroke: Number(document.getElementById('f_stroke').value) || 0,
     pcsok: Number(document.getElementById('f_pcsok').value) || 0,
 frekCoolant: document.getElementById('f_frekcoolant').value,
+panjangCoil: Number(document.getElementById('f_panjangcoil').value) || 0,
     ngRows: getNgRows(),
     jenisScrap: getNgRows().map(r => r.jenis).filter(Boolean).join(', '),
     qtyNg: getNgRows().reduce((s,r) => s + r.qty, 0),
@@ -3212,7 +3238,7 @@ function renderRiwayatHeader(){
     <th>Stop Terplan Jenis</th><th>Stop Terplan Menit</th><th>% Stop Terplan</th>
     <th>Total Line Stop</th><th>% Line Stop</th><th>Waktu Efektif</th><th>% Efisiensi</th>
     ${catTh}
-    <th>Konfirmasi</th><th>Frek Coolant</th><th>Aksi</th>
+    <th>Konfirmasi</th><th>Frek Coolant</th><th>Panjang Coil (mm)</th><th>Aksi</th>
   `;
 }
 
@@ -3309,6 +3335,7 @@ function renderRiwayat(){
       ${catTds}
       <td>${entry.konfirmasi ? '✅' : '—'}</td>
       <td>${entry.frekCoolant || '-'}</td>
+      <td>${entry.panjangCoil || '-'}</td>
       <td>
         ${isAdminUser() ? `<button class="btn btn-ghost btn-sm" data-edit="${entry.id}">Edit</button>
         <button class="btn btn-danger btn-sm" data-del="${entry.id}">Hapus</button>` : '—'}
@@ -3346,6 +3373,8 @@ function editEntry(id){
   document.getElementById('f_pcsok').value = entry.pcsok;
   document.getElementById('f_frekcoolant').value = entry.frekCoolant;   // ← tambah baris ini
 updatePartMaxAndValidate();   // ← tambah baris ini
+  updatePanjangCoilVisibility(); // pastikan field-nya kelihatan/kesembunyi sesuai mesin sebelum diisi
+  document.getElementById('f_panjangcoil').value = entry.panjangCoil || '';
   document.getElementById('f_alasan_tidaksesuai').value = entry.alasanTidakSesuai || '';
   document.getElementById('ngRows').innerHTML = '';
   // Data lama (sebelum multi-NG) cuma punya jenisScrap+qtyNg tunggal -> fallback jadi 1 baris.
@@ -3572,7 +3601,7 @@ function exportEntriesToCsv(entries, filenamePrefix){
     'Jam Mulai','Jam Selesai','Waktu Dandori (menit)','Total Produksi (menit)','Total Produksi (Jam)',
     'Jenis Line Stop Terplanning','Waktu Line Stop Terplanning (menit)','Total Line Stop (menit)',
     'Waktu Efektif (menit)','% Line Stop','% Dandori','% Efisiensi','Waktu Input','Detail Problem','Konfirmasi',
-'Frekuensi Spray Coolant (Dromus)'];
+'Frekuensi Spray Coolant (Dromus)','Panjang Coil (mm)'];
 
   const rows = entries.map(e => [
   e.tanggal, e.shift, e.pic, e.part, e.planning, e.material, e.stroke, e.pcsok,
@@ -3583,7 +3612,8 @@ function exportEntriesToCsv(entries, filenamePrefix){
   e.waktuInput || '',
   (e.problems||[]).map(p => `${p.kategori}: ${p.keterangan} (${p.menit}m)`).join(' | '),
   e.konfirmasi ? 'TRUE' : 'FALSE',
-  e.frekCoolant
+  e.frekCoolant,
+  e.panjangCoil || ''
 ]);
 
   const csv = [headers, ...rows].map(r =>
@@ -5689,6 +5719,7 @@ recomputeStrip();
 updateSyncBanner();
 renderOfflineBadge();
 syncPendingReviewOverlayVisibility(); // kunci form Entry Data dari awal kalau masih ada laporan yg belum lengkap direview
+updatePanjangCoilVisibility(); // sembunyikan field Panjang Coil di awal kalau mesin aktif bukan 800BP/300BP
 renderAll();
 renderSyncStatusBadge();
 syncFromServer(false);
