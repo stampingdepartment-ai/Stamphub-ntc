@@ -11,9 +11,12 @@
 <link rel="apple-touch-icon" href="/icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 <script>
-  // Diisi otomatis oleh Apps Script saat halaman ini di-deploy & dibuka.
-  // Kalau file ini dibuka langsung sebagai HTML biasa (bukan lewat Apps Script), akan kosong.
-  var SELF_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwCJy7nttB731S_pJiAUfY6XUvXMAWW8fYaoIKJpZuFhE8RyxlR-nk2RKcwlfPOccnbjg/exec";
+  // Diisi otomatis oleh Apps Script (lihat doGet() di Code.gs: tmpl.scriptUrl = ScriptApp.getService().getUrl())
+  // setiap kali halaman ini di-render lewat deployment yang aktif. Kalau file ini dibuka
+  // langsung sebagai HTML biasa (bukan lewat Apps Script), scriptlet <?!= ?> di bawah tidak
+  // dieksekusi dan tetap tampil sebagai teks -- makanya dicek juga lewat indexOf('http')===0
+  // di autoConnect() sebelum dipakai.
+  var SELF_SCRIPT_URL = "<?!= scriptUrl ?>";
 </script>
 <script>
 /*!
