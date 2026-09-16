@@ -1155,6 +1155,7 @@ input[type="time"]::-webkit-calendar-picker-indicator{
       <button class="btn btn-ghost btn-sm" id="clearFilterBtn">Tampilkan Semua</button>
       <button class="btn btn-ghost btn-sm" id="printReportBtn">🖨 Cetak Laporan</button>
       <button class="btn btn-ghost btn-sm" id="exportCsvBtn" style="margin-left:auto;">Export CSV</button>
+      <button class="btn btn-ghost btn-sm" id="riwayatRefreshBtn" type="button">&#8635; Refresh</button>
     </div>
     <div class="table-wrap">
       <table>
@@ -2316,11 +2317,15 @@ document.getElementById('logoutBtn')?.addEventListener('click', () => {
 async function syncMasterFromServer(){
   const cfg = getConfig();
   if(!cfg.scriptUrl) return;
+  // Sama seperti di syncFromServer(): kunci mesin yang diminta SEBELUM await, biar kalau user
+  // keburu ganti mesin selagi request ke Sheets masih berjalan, hasilnya tidak kesimpen di
+  // slot mesin yang salah.
+  const requestedMachine = state.machine;
   try{
     const master = await apiGetMaster();
     if(master){
       const all = getMasterAll();
-      all[state.machine] = {
+      all[requestedMachine] = {
         pic: (master.pic || []).slice(),
         part: (master.part || []).slice(),
         scrap: (master.scrap || []).slice(),
@@ -2335,13 +2340,22 @@ async function syncMasterFromServer(){
 async function syncFromServer(showToast){
   const cfg = getConfig();
   if(!cfg.scriptUrl) return;
+  // PENTING: tangkap mesin yang lagi diminta SEBELUM await di bawah. apiList() butuh waktu
+  // (network ke Google Sheets, kadang lambat) -- kalau selama menunggu itu user ganti mesin,
+  // state.machine sudah berubah duluan. Kalau kita baca state.machine lagi SETELAH await,
+  // data mesin lama (yang baru saja balas dari server) akan kesimpen & ketampil sebagai data
+  // mesin yang baru dipilih (nyangkut/"telat" nampilin mesin sebelumnya). Makanya di bawah
+  // ini dipakai `requestedMachine` yang sudah dikunci nilainya sejak awal, bukan state.machine.
+  const requestedMachine = state.machine;
   try{
     if(showToast) toast('Memuat data dari Google Sheets...');
     const entries = await apiList();
     if(entries){
-      setEntries(state.machine, entries);
-      seedMasterFromEntries(state.machine, entries);
-      renderAll();
+      setEntries(requestedMachine, entries);
+      seedMasterFromEntries(requestedMachine, entries);
+      // Cuma re-render kalau user masih di mesin yang sama -- kalau sudah pindah mesin lagi,
+      // render mesin aktif saat ini biar tidak ketimpa tampilan data mesin yang sudah ditinggal.
+      if(state.machine === requestedMachine) renderAll();
       if(showToast) toast('Data terbaru dimuat dari Sheets');
     }
     await syncMasterFromServer();
@@ -3660,6 +3674,19 @@ document.querySelectorAll('#dashboardRangePills input[name="dashboardRange"]').f
 document.getElementById('dashboardRefreshBtn').addEventListener('click', async () => {
   await syncFromServer(true);
 });
+/** Tombol Refresh manual di Record Data (Riwayat) -- sebelumnya tab ini TIDAK punya cara
+ *  refresh selain pindah tab lalu balik lagi. Efeknya: status "Review GL/FM" yang baru saja
+ *  diklik oleh operator lain kelihatan tetap "Belum direview" di layar SPV UP/Admin yang
+ *  sudah lama membuka tab ini, padahal sebenarnya sudah tersimpan di Sheets -- cuma cache
+ *  lokal browser mereka belum sempat di-refresh. */
+document.getElementById('riwayatRefreshBtn').addEventListener('click', async () => {
+  await syncFromServer(true);
+});
+/** Auto-refresh Record Data tiap 60 detik selagi tab Riwayat aktif, biar status Review GL/FM
+ *  (dan data lain) ikut ter-update sendiri tanpa perlu pindah-pindah tab dulu. */
+setInterval(() => {
+  if(state.view === 'riwayat') syncFromServer(false);
+}, 60 * 1000);
 document.getElementById('summaryFilterApplyBtn').addEventListener('click', () => {
   state.summaryFilter.from = document.getElementById('summaryFilterFrom').value || '';
   state.summaryFilter.to = document.getElementById('summaryFilterTo').value || '';
