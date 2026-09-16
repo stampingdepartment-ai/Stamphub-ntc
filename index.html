@@ -2159,6 +2159,7 @@ function showApp(){
   document.getElementById('loginOverlay').style.display = 'none';
   updateLoginInfo();
   applyRolePermissions();
+  refreshPendingReviewPollState(); // kalau ada pending review yang tersimpan dari sesi sebelumnya, lanjutkan pollingnya
 }
 function updateLoginInfo(){
   const session = getLoginSession();
@@ -2676,7 +2677,12 @@ function computeDurationMinutesWithBreaks(tanggal, start, end){
 
     let cond2;
     if(selesai < mulai){
-      cond2 = (mulai >= 1275 || mulai <= 25) && selesai >= 25;
+      // FIX: sebelumnya syaratnya "selesai >= 25" (jam MULAI istirahat) -- salah, karena itu
+      // artinya shift yang berakhir PERSIS jam 00:25 (baru masuk waktu istirahat, belum
+      // pernah menjalaninya) sudah dianggap kena potongan penuh 30 menit. Seharusnya sama
+      // seperti cabang lain: baru dipotong penuh kalau shift benar2 berlangsung SAMPAI
+      // akhir istirahat (00:55), makanya syaratnya "selesai >= 55".
+      cond2 = (mulai >= 1275 || mulai <= 25) && selesai >= 55;
     } else {
       cond2 = mulai <= 25 && selesai >= 55;
     }
@@ -2965,18 +2971,54 @@ function checkPendingReviewStatus(){
     setPendingReview(null);
     hidePendingReviewOverlay();
     resetForm();
+    refreshPendingReviewPollState();
     toast('Laporan sudah direview GL/FM -- silakan lanjut input laporan berikutnya.');
     return;
   }
   renderPendingReviewStatus();
+}
+
+/** Tarik data TERBARU khusus untuk mesin yang lagi di-pending -- SENGAJA tidak pakai
+ *  syncFromServer() biasa, karena itu cuma narik data mesin yang lagi aktif di dropdown
+ *  (state.machine). Kalau T/M pindah ke mesin lain sementara laporan mesin sebelumnya masih
+ *  menunggu direview, syncFromServer() akan salah sasaran. Fungsi ini selalu fetch ke
+ *  pending.machine, apa pun mesin yang lagi aktif di dropdown sekarang. */
+async function pollPendingReviewOnce(){
+  const pending = getPendingReview();
+  if(!pending) return;
+  const cfg = getConfig();
+  if(!cfg.scriptUrl){ checkPendingReviewStatus(); return; }
+  try{
+    const res = await fetch(cfg.scriptUrl + '?action=list&machine=' + encodeURIComponent(pending.machine));
+    const data = await res.json();
+    if(data.ok && Array.isArray(data.entries)){
+      setEntries(pending.machine, data.entries);
+      if(pending.machine === state.machine) renderAll(); // ikutkan Riwayat/Dashboard kalau lagi dibuka di mesin yang sama
+    }
+  }catch(e){ /* diamkan -- koneksi lagi bermasalah, dicoba lagi di polling berikutnya */ }
+  checkPendingReviewStatus();
+}
+
+/** Auto-polling supaya status "Menunggu Review" ikut update SENDIRI tanpa T/M harus klik
+ *  "Cek Status Terbaru" berulang-ulang. Jalan tiap 15 detik SELAMA ada laporan yang masih
+ *  pending, berhenti otomatis begitu sudah direview (lihat checkPendingReviewStatus() di atas)
+ *  atau saat tidak ada pending sama sekali. Dipanggil ulang tiap kali status pending berubah. */
+let pendingReviewPollTimer = null;
+function refreshPendingReviewPollState(){
+  const pending = getPendingReview();
+  if(pending && !pendingReviewPollTimer){
+    pendingReviewPollTimer = setInterval(pollPendingReviewOnce, 15000);
+  } else if(!pending && pendingReviewPollTimer){
+    clearInterval(pendingReviewPollTimer);
+    pendingReviewPollTimer = null;
+  }
 }
 document.getElementById('pendingReviewRefreshBtn').addEventListener('click', async () => {
   const btn = document.getElementById('pendingReviewRefreshBtn');
   btn.disabled = true;
   const original = btn.textContent;
   btn.textContent = 'Mengecek...';
-  try{ await syncFromServer(); }catch(e){ /* biarkan, tetap cek dari cache lokal di bawah */ }
-  checkPendingReviewStatus();
+  await pollPendingReviewOnce();
   btn.disabled = false;
   btn.textContent = original;
 });
@@ -3036,6 +3078,7 @@ frekCoolant: document.getElementById('f_frekcoolant').value,
   if(shouldBlockNext){
     setPendingReview({ machine: state.machine, id: entry.id });
     showPendingReviewOverlay();
+    refreshPendingReviewPollState();
     isEntryFormDirty = false; // sudah tersimpan -- bukan "unsaved changes" lagi, walau resetForm() tidak dipanggil di sini
   } else {
     resetForm();
