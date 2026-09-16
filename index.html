@@ -3431,6 +3431,23 @@ function buildSpvCheckpoints_(){
   });
 }
 
+/** Backend (Apps Script/Sheets) kadang mengembalikan tanggal & jam bukan sebagai string polos
+ *  "YYYY-MM-DD" / "HH:MM", tapi sebagai Date object yang ke-serialize jadi ISO datetime penuh
+ *  (mis. "2026-09-15T00:00:00.000Z") atau format jam beda padding (mis. "0:25"). Kalau itu
+ *  terjadi, perbandingan string persis (===) di bawah GAGAL terus meskipun sudah dikonfirmasi,
+ *  jadi badge tetap merah selamanya. Dua helper ini menormalkan kedua sisi sebelum dibandingkan
+ *  supaya pencocokan tetap jalan walau format dari backend agak berbeda. */
+function normSpvTanggal_(v){
+  if(!v) return '';
+  const m = String(v).match(/(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : String(v).trim();
+}
+function normSpvCheckpoint_(v){
+  if(!v) return '';
+  const m = String(v).match(/(\d{1,2}):(\d{2})/);
+  return m ? `${m[1].padStart(2,'0')}:${m[2]}` : String(v).trim();
+}
+
 function renderSpvCheckSection(){
   const container = document.getElementById('spvCheckSection');
   if(!container) return;
@@ -3441,7 +3458,7 @@ function renderSpvCheckSection(){
   const isSpv = isSpvUpUser() || isAdminUser();
 
   container.innerHTML = checkpoints.map(cp => {
-    const rec = spvCheckCache_.find(c => c.tanggal === cp.tanggal && c.checkpoint === cp.time);
+    const rec = spvCheckCache_.find(c => normSpvTanggal_(c.tanggal) === cp.tanggal && normSpvCheckpoint_(c.checkpoint) === cp.time);
     if(rec){
       return `<div style="background:color-mix(in srgb, var(--good) 14%, transparent); border:1px solid color-mix(in srgb, var(--good) 40%, transparent); border-radius:10px; padding:10px 16px; margin-bottom:8px; font-size:12.5px;">
         &#9989; Cek Berkala ${cp.time} &mdash; dikonfirmasi <b>${escapeHtml(rec.nama)}</b> (${rec.waktu})
