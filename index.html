@@ -4093,7 +4093,7 @@ function renderDashboard(){
   if(ngCard) ngCard.classList.toggle('hmi-alert', historyNgAvgPerDay > 0 && rangeNgAvgPerDay > historyNgAvgPerDay * 1.15);
 
   /* ---- Agregasi per hari, gabungan & per shift (21 hari terakhir yang ada datanya) ---- */
-  const emptyShift = () => ({ strokeSum:0, ngSum:0, lineStopSum:0, totalJamSum:0 });
+  const emptyShift = () => ({ strokeSum:0, ngSum:0, lineStopSum:0, totalJamSum:0, terencanaSum:0 });
   const byDay = {};
   entries.forEach(e => {
     if(!byDay[e.tanggal]) byDay[e.tanggal] = {
@@ -4115,6 +4115,7 @@ function renderDashboard(){
     d.byShift[sh].strokeSum += e.stroke;
     d.byShift[sh].ngSum += e.qtyNg;
     d.byShift[sh].lineStopSum += e.computed.lineStop;
+    d.byShift[sh].terencanaSum += e.stopTerplanMenit || 0;
     // sama: basis GSPH per shift juga harus dikurangi Line Stop Terplanning per entry.
     d.byShift[sh].totalJamSum += e.computed.totalJam - ((e.stopTerplanMenit || 0) / 60);
   });
@@ -4225,21 +4226,22 @@ const groupedOpts = {
       y:{ grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} }, min:0, max:100 }
     }
   };
-  // Skala khusus Line Stop: max 250 menit
+  // Skala khusus Line Stop: max 300 menit
   const lineStopHariOpts = {
     responsive:true,
     plugins:{ legend:{ display:true, labels:{ color:tickColor, font:{size:11}, boxWidth:12 } } },
     scales:{
       x:{ stacked:true, grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} } },
-      y:{ stacked:true, grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} }, min:0, max:250 }
+      y:{ stacked:true, grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} }, min:0, max:300 }
     }
   };
+  // Stacked juga (Terencana + Tidak Terencana ditumpuk), dipisah 2 tumpukan berdampingan per shift.
   const lineStopShiftOpts = {
     responsive:true,
     plugins:{ legend:{ display:true, labels:{ color:tickColor, font:{size:10}, boxWidth:10 } } },
     scales:{
-      x:{ grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} } },
-      y:{ grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} }, min:0, max:250 }
+      x:{ stacked:true, grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} } },
+      y:{ stacked:true, grid:{ color:gridColor }, ticks:{ color:tickColor, font:{size:10} }, min:0, max:300 }
     }
   };
     // Skala Stroke: auto mengikuti data tertinggi (tanpa batas atas tetap)
@@ -4325,12 +4327,16 @@ const groupedOpts = {
     ]},
     options: lineStopHariOpts
   });
-// (BARU) Line Stop (menit) / Shift, dipisah Merah & Biru — sama seperti pola GSPH/Stroke/NG per Shift
+// (BARU) Line Stop (menit) / Shift, dipisah Merah & Biru — sekarang stacked (Terencana +
+  // Tidak Terencana ditumpuk per shift, sama polanya dengan chart "Line Stop / Hari"), dan
+  // dua tumpukan (Merah, Biru) ditampilkan berdampingan lewat properti `stack` yang beda.
   charts.lineStopByShift = new Chart(document.getElementById('chartLineStopByShift'), {
     type:'bar',
     data:{ labels: monthLabels, datasets:[
-      { label:'Merah (RED)', data: monthDays.map(d=> hasDay(d) ? byDay[d].byShift.RED.lineStopSum : null), backgroundColor: COLOR_RED, borderRadius:3 },
-      { label:'Biru (BLUE)', data: monthDays.map(d=> hasDay(d) ? byDay[d].byShift.BLUE.lineStopSum : null), backgroundColor: COLOR_BLUE, borderRadius:3 },
+      { label:'Terencana (Merah)', stack:'red', data: monthDays.map(d=> hasDay(d) ? byDay[d].byShift.RED.terencanaSum : null), backgroundColor:'#f4b740', borderRadius:2 },
+      { label:'Tidak Terencana (Merah)', stack:'red', data: monthDays.map(d=> hasDay(d) ? byDay[d].byShift.RED.lineStopSum : null), backgroundColor: COLOR_RED, borderRadius:2 },
+      { label:'Terencana (Biru)', stack:'blue', data: monthDays.map(d=> hasDay(d) ? byDay[d].byShift.BLUE.terencanaSum : null), backgroundColor:'#fbd88a', borderRadius:2 },
+      { label:'Tidak Terencana (Biru)', stack:'blue', data: monthDays.map(d=> hasDay(d) ? byDay[d].byShift.BLUE.lineStopSum : null), backgroundColor: COLOR_BLUE, borderRadius:2 },
     ]},
     options: lineStopShiftOpts
   });
