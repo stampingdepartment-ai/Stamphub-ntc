@@ -13,7 +13,7 @@
 <script>
   // Diisi otomatis oleh Apps Script (lihat doGet() di Code.gs: tmpl.scriptUrl = ScriptApp.getService().getUrl())
   // setiap kali halaman ini di-render lewat deployment yang aktif. Kalau file ini dibuka
-  // langsung sebagai HTML biasa (bukan lewat Apps Script), scriptlet <?!= ?> di bawah tidak
+  // langsung sebagai HTML biasa (bukan lewat Apps Script), scriptlet templating di bawah tidak
   // dieksekusi dan tetap tampil sebagai teks -- makanya dicek juga lewat indexOf('http')===0
   // di autoConnect() sebelum dipakai.
   var SELF_SCRIPT_URL = "<?!= scriptUrl ?>";
@@ -2878,6 +2878,15 @@ document.getElementById('entryForm').addEventListener('submit', (e) => {
   e.preventDefault();
 
   const computed = recomputeStrip();
+
+  // BLOK KERAS: checkbox "Konfirmasi hasil laporan hari ini sudah benar" WAJIB dicentang
+  // sebelum bisa lanjut simpan -- sebelumnya checkbox ini cuma kesimpen sebagai penanda
+  // (✅/— di tabel Riwayat) tapi tidak pernah benar-benar dicek di sini, jadi operator bisa
+  // simpan laporan walau belum mencentangnya sama sekali.
+  if(!document.getElementById('f_konfirmasi').checked){
+    toast('Centang dulu "Konfirmasi hasil laporan hari ini sudah benar" sebelum menyimpan.');
+    return;
+  }
 
   // BLOK KERAS: durasi 0 menit hampir selalu berarti Jam Mulai/Jam Selesai salah input
   // (misal untuk shift siang, jam selesai diisi lebih awal dari jam mulai).
