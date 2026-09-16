@@ -5702,8 +5702,22 @@ checkLoginGate();
 
 setInterval(renderEarlyWarningBanner, 5 * 60 * 1000);
 setInterval(renderSpvCheckSection, 60 * 1000); // update tampilan "telat X menit" tiap 1 menit
+
+/** Service worker DIMATIKAN. Sebelumnya app ini register '/sw.js' supaya bisa dipakai
+ *  offline, tapi efek sampingnya: HP/komputer yang sudah pernah buka app ini suka nyangkut
+ *  di versi LAMA yang ke-cache oleh service worker, dan tidak otomatis ke-update walau
+ *  Apps Script-nya sudah di-deploy ulang dengan perbaikan terbaru -- device itu perlu
+ *  clear cache manual dulu baru kelihatan versi barunya. Supaya semua device otomatis
+ *  "sembuh" sendiri begitu buka app ini sekali lagi (tanpa perlu clear cache manual satu-
+ *  satu), kode di bawah ini AKTIF mencopot service worker lama yang mungkin masih
+ *  terpasang di device tersebut, dan menghapus semua cache yang sempat disimpannya. */
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js');
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(reg => reg.unregister());
+  });
+  if (window.caches && caches.keys) {
+    caches.keys().then(keys => keys.forEach(key => caches.delete(key)));
+  }
 }
 </script>
 </body>
