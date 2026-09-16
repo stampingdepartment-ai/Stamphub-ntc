@@ -11,15 +11,12 @@
 <link rel="apple-touch-icon" href="/icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 <script>
-  // VERSI VERCEL/GITHUB: file ini TIDAK dirender lewat Apps Script, jadi scriptlet
-  // <?!= ?> templating tidak berlaku di sini -- itu cuma jalan di file Index.html yang
-  // ada DI DALAM Apps Script editor (beda file, walau isinya mirip).
-  //
-  // SELF_SCRIPT_URL di sini diarahkan ke "/api/proxy" -- proxy yang jalan di server
-  // Vercel sendiri (lihat /api/proxy.js), BUKAN langsung ke script.google.com. Kalau
-  // manggil langsung ke script.google.com dari sini, browser akan diblokir CORS
-  // karena domainnya beda (stamphub-ntc.vercel.app vs script.google.com).
-  var SELF_SCRIPT_URL = "/api/proxy";
+  // Diisi otomatis oleh Apps Script (lihat doGet() di Code.gs: tmpl.scriptUrl = ScriptApp.getService().getUrl())
+  // setiap kali halaman ini di-render lewat deployment yang aktif. Kalau file ini dibuka
+  // langsung sebagai HTML biasa (bukan lewat Apps Script), scriptlet templating di bawah tidak
+  // dieksekusi dan tetap tampil sebagai teks -- makanya dicek juga lewat indexOf('http')===0
+  // di autoConnect() sebelum dipakai.
+  var SELF_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwCJy7nttB731S_pJiAUfY6XUvXMAWW8fYaoIKJpZuFhE8RyxlR-nk2RKcwlfPOccnbjg/exec";
 </script>
 <script>
 /*!
@@ -1995,16 +1992,26 @@ function getConfig(){
 }
 function setConfig(cfg){ localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg)); }
 
-// VERSI VERCEL: SELALU pakai proxy "/api/proxy" milik domain ini sendiri, timpa apapun yang
-// tersimpan di localStorage sebelumnya (termasuk config lama yang sempat manual diarahkan
-// langsung ke script.google.com dan menyebabkan error CORS). Beda dari file Index.html versi
-// Apps Script yang punya logika deteksi host -- di sini tidak perlu, karena file ini memang
-// SELALU dijalankan dari domain Vercel, jadi proxy ini SELALU yang benar dipakai.
+// Auto-connect: kalau halaman ini dibuka lewat Apps Script (SELF_SCRIPT_URL terisi),
+// SELALU pakai URL deployment yang sedang aktif ini — timpa apapun yang tersimpan di
+// localStorage sebelumnya. Ini mencegah aplikasi "nyangkut" ke URL deployment lama
+// setiap kali script di-deploy ulang (root cause dari error "Aksi tidak dikenali").
+// Kalau halaman dibuka sebagai HTML biasa (SELF_SCRIPT_URL kosong), config manual
+// yang tersimpan di localStorage tetap dihormati (mode "Hubungkan Sheets" manual).
+const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwCJy7nttB731S_pJiAUfY6XUvXMAWW8fYaoIKJpZuFhE8RyxlR-nk2RKcwlfPOccnbjg/exec";
+
 (function autoConnect(){
+  const isAppsScriptHost = /(^|\.)script\.google\.com$|(^|\.)googleusercontent\.com$/i.test(location.hostname);
   const cfg = getConfig();
-  if(cfg.scriptUrl !== SELF_SCRIPT_URL){
-    setConfig({ ...cfg, scriptUrl: SELF_SCRIPT_URL });
-    console.log('[StampHub] scriptUrl diarahkan ke proxy:', SELF_SCRIPT_URL);
+
+  if(isAppsScriptHost && typeof SELF_SCRIPT_URL === 'string' && SELF_SCRIPT_URL.indexOf('http') === 0){
+    if(cfg.scriptUrl !== SELF_SCRIPT_URL){
+      setConfig({ ...cfg, scriptUrl: SELF_SCRIPT_URL });
+      console.log('[StampHub] scriptUrl diperbarui otomatis ke deployment aktif:', SELF_SCRIPT_URL);
+    }
+  } else if(!cfg.scriptUrl){
+    setConfig({ ...cfg, scriptUrl: DEFAULT_SCRIPT_URL });
+    console.log('[StampHub] scriptUrl diisi otomatis dari default:', DEFAULT_SCRIPT_URL);
   }
 })();
 
