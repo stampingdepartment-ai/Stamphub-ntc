@@ -17,47 +17,58 @@
     display:flex; align-items:center; justify-content:center; min-height:100vh;
     text-align:center;
   }
-  .wrap{ padding:24px; }
+  .wrap{ padding:24px; max-width:340px; }
   img.logo{ width:120px; border-radius:10px; margin-bottom:18px; }
-  h1{ font-size:18px; margin:0 0 8px; }
-  p{ color:#9aa2a8; font-size:13px; margin:0 0 20px; }
-  .spinner{
-    width:28px; height:28px; margin:0 auto 18px;
-    border:3px solid rgba(45,212,191,.25); border-top-color:#2dd4bf; border-radius:50%;
-    animation: spin .8s linear infinite;
+  h1{ font-size:19px; margin:0 0 8px; }
+  p{ color:#9aa2a8; font-size:13px; margin:0 0 22px; line-height:1.5; }
+  .btn{
+    display:block; width:100%; box-sizing:border-box; padding:14px; border-radius:10px;
+    border:none; font-size:15px; font-weight:700; cursor:pointer; margin-bottom:10px;
+    text-decoration:none;
   }
-  @keyframes spin{ to{ transform:rotate(360deg); } }
-  a.manual-link{ color:#2dd4bf; font-size:13px; text-decoration:none; }
+  .btn-primary{ background:#2dd4bf; color:#06201c; }
+  .btn-install{ background:#1d2126; color:#e7e9ea; border:1px solid #2a2f34; display:none; }
 </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="spinner"></div>
     <h1>Stamphub-Ntc</h1>
-    <p>Membuka aplikasi...</p>
-    <a class="manual-link" id="manualLink" href="#">Kalau tidak otomatis terbuka, klik di sini</a>
+    <p>One Platform for All Stamping Data<br>PT Nusa Toyotetsu Corp</p>
+
+    <!-- Tombol Install ini baru muncul kalau browser-nya mendeteksi halaman ini
+         "installable" (manifest + service worker valid). Kalau tombolnya tidak
+         muncul, biasanya browser tetap punya opsi "Install app" / "Add to Home
+         Screen" di menu titik tiga (⋮) di pojok kanan atas. -->
+    <button class="btn btn-install" id="installBtn" type="button">⬇ Install Aplikasi</button>
+
+    <a class="btn btn-primary" id="openAppLink" href="#">Buka Aplikasi</a>
   </div>
 
   <script>
-    // Link exec Apps Script yang SEBENARNYA menjalankan aplikasi. Ganti nilai ini kalau
-    // suatu saat deployment Apps Script-nya benar-benar ganti URL (jarang terjadi selama
-    // selalu pakai "New version", bukan bikin deployment baru).
     var EXEC_URL = "https://script.google.com/macros/s/AKfycbwCJy7nttB731S_pJiAUfY6XUvXMAWW8fYaoIKJpZuFhE8RyxlR-nk2RKcwlfPOccnbjg/exec";
+    document.getElementById('openAppLink').href = EXEC_URL;
 
-    document.getElementById('manualLink').href = EXEC_URL;
-
-    // Daftarkan service worker DULU (supaya browser sempat menganggap halaman ini installable
-    // sebagai PWA) sebelum redirect ke aplikasi aslinya. Service worker ini "polos" -- tidak
-    // menyimpan cache apa pun, cuma syarat teknis biar tombol Install muncul.
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(function(){ /* diamkan kalau gagal, tetap lanjut redirect */ });
+      navigator.serviceWorker.register('/sw.js').catch(function(){});
     }
 
-    // Kasih jeda sedikit (600ms) supaya manifest+service worker sempat "kebaca" browser
-    // sebelum pindah halaman, baru redirect ke aplikasi aslinya di Apps Script.
-    setTimeout(function(){
-      window.location.replace(EXEC_URL);
-    }, 600);
+    // Tangkap event install PWA dari browser, tampilkan tombol "Install Aplikasi"
+    // sendiri kalau memang tersedia (ini TIDAK selalu muncul di semua browser/kondisi
+    // -- itu wajar, tombol "Buka Aplikasi" di bawahnya tetap selalu bisa dipakai).
+    var deferredInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', function(e){
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      document.getElementById('installBtn').style.display = 'block';
+    });
+    document.getElementById('installBtn').addEventListener('click', function(){
+      if(!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      deferredInstallPrompt.userChoice.finally(function(){
+        deferredInstallPrompt = null;
+        document.getElementById('installBtn').style.display = 'none';
+      });
+    });
   </script>
 </body>
 </html>
